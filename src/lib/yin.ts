@@ -4,18 +4,33 @@
  * Returns frequency in Hz, or -1 if no pitch detected.
  */
 
-const DEFAULT_THRESHOLD = 0.10;
+const DEFAULT_THRESHOLD = 0.20; // acoustic guitars need a more lenient threshold due to rich harmonics
+
+// Guitar frequency range: high-e string up the neck (~1380 Hz) → low E string (82 Hz).
+// tau = sampleRate / frequency, so:
+//   tau_min = 44100 / 1380 ≈ 32   (highest playable note)
+//   tau_max = 44100 /   82 ≈ 537  (low open E string)
+// Only scanning this tau window cuts the outer-loop from halfSize iterations to ~505,
+// giving a ~7× speedup. Combined with buffer size 4096 (vs 8192) the total speedup
+// over the naive approach is roughly 15×.
+const GUITAR_TAU_MIN = 32;
+const GUITAR_TAU_MAX = 540;
 
 export function yin(buffer: Float32Array<ArrayBuffer>, sampleRate: number, threshold = DEFAULT_THRESHOLD): number {
   const bufferSize = buffer.length;
-  const halfSize = Math.floor(bufferSize / 2);
-  const yinBuffer = new Float32Array(halfSize);
+  const halfSize   = Math.floor(bufferSize / 2);
+  const tauMax     = Math.min(halfSize, GUITAR_TAU_MAX + 1);
 
-  // Step 1: Autocorrelation difference function
+  // yinBuffer only needs to hold values up to tauMax
+  const yinBuffer = new Float32Array(tauMax);
+
+  // Step 1 + 3: Difference function + cumulative mean normalisation.
+  // We must compute the running sum from tau=1 (even for tau < GUITAR_TAU_MIN)
+  // so that the normalisation is correct when we start reading results.
   yinBuffer[0] = 1;
   let runningSum = 0;
 
-  for (let tau = 1; tau < halfSize; tau++) {
+  for (let tau = 1; tau < tauMax; tau++) {
     let sum = 0;
     for (let i = 0; i < halfSize; i++) {
       const delta = buffer[i] - buffer[i + tau];
@@ -28,12 +43,12 @@ export function yin(buffer: Float32Array<ArrayBuffer>, sampleRate: number, thres
     yinBuffer[tau] *= tau / runningSum;
   }
 
-  // Step 4: Absolute threshold — find first tau where yinBuffer[tau] < threshold
-  let tau = 2;
-  while (tau < halfSize) {
+  // Step 4: Absolute threshold — search only within the guitar tau window
+  let tau = Math.max(2, GUITAR_TAU_MIN);
+  while (tau < tauMax) {
     if (yinBuffer[tau] < threshold) {
       // Walk to local minimum
-      while (tau + 1 < halfSize && yinBuffer[tau + 1] < yinBuffer[tau]) {
+      while (tau + 1 < tauMax && yinBuffer[tau + 1] < yinBuffer[tau]) {
         tau++;
       }
       break;
@@ -41,7 +56,7 @@ export function yin(buffer: Float32Array<ArrayBuffer>, sampleRate: number, thres
     tau++;
   }
 
-  if (tau === halfSize || yinBuffer[tau] >= threshold) {
+  if (tau >= tauMax || yinBuffer[tau] >= threshold) {
     return -1; // No pitch detected
   }
 
