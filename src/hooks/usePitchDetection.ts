@@ -7,11 +7,15 @@ import { yin, frequencyToNote, DetectedNote } from "@/lib/yin";
 // 4096 samples @ 44100 Hz = ~93 ms window.
 // Low E (82 Hz) has a period of ~537 samples → ~3.8 cycles per buffer — enough
 // for reliable YIN detection. Halving from 8192 cuts YIN cost 4× (O(n²)).
-const BUFFER_SIZE = 4096;
-const SAMPLE_RATE = 44100;
+const BUFFER_SIZE    = 4096;
+const SAMPLE_RATE    = 44100;
 // Very low silence gate — acoustic guitars are naturally quiet, especially
 // when the mic isn't right in front of the soundhole.
-const MIN_VOLUME  = 0.0018;
+const MIN_VOLUME     = 0.0018;
+// Skip pitch detection for the first N frames (~300 ms @ 60 fps).
+// The analyser's 4096-sample buffer takes ~93 ms to fill with real mic data;
+// any ambient noise hitting YIN before that produces garbage frequencies.
+const WARMUP_FRAMES  = 18;
 
 export interface PitchState {
   note: DetectedNote | null;
@@ -102,6 +106,12 @@ export function usePitchDetection() {
 
       const tick = () => {
         frameCountRef.current++;
+
+        // Warmup: let the audio subsystem stabilise before running YIN.
+        if (frameCountRef.current <= WARMUP_FRAMES) {
+          animFrameRef.current = requestAnimationFrame(tick);
+          return;
+        }
 
         // Run YIN every 3rd frame (~20 fps) — the algorithm is O(n²) on 8192
         // samples so calling it every 60fps frame burns ~1B ops/sec and causes lag.

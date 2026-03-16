@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Level, TabNote } from "@/types/tab";
 import { PitchState } from "@/hooks/usePitchDetection";
+import type { BackingTrackClock } from "@/hooks/useBackingTrack";
 
 // ── Timing constants ──────────────────────────────────────────────────────────
 const CENTS_THRESHOLD  = 75;   // ±75¢ = close enough to count as a hit
@@ -44,7 +45,7 @@ export interface GameLoopReturn {
 export function useGameLoop(
   level             : Level,
   pitchData         : PitchState,
-  audioWallStartRef : React.MutableRefObject<number | null>,
+  audioClockRef     : React.MutableRefObject<BackingTrackClock>,
   bpmMultiplier     : number = 1,
   mode              : "timed" | "practice" = "timed",
 ): GameLoopReturn {
@@ -107,7 +108,7 @@ export function useGameLoop(
     // Fresh reset at start of each listening session
     const fresh = new Map(level.notes.map(n => [n.id, "pending" as NoteStatus]));
     statusesRef.current             = fresh;
-    startTimeRef.current            = null; // set on first rAF tick from audioWallStartRef
+    startTimeRef.current            = null; // set on first audio-clock tick from audioClockRef
     elapsedRef.current              = 0;
     requireReleaseRef.current       = false;
     lastHitFreqRef.current          = null;
@@ -191,14 +192,19 @@ export function useGameLoop(
         requestAnimationFrame(tick);
         return;
       }
-
-      // ── Timed mode — clock-driven, notes can be missed ───────────────────
-      // Sync to audio clock on first tick — eliminates game/audio drift
-      if (startTimeRef.current === null) {
-        startTimeRef.current = audioWallStartRef.current ?? ts;
+      // Timed mode: drive gameplay from the same audio clock as the drums.
+      const audioClock = audioClockRef.current;
+      if (!audioClock.ctx || audioClock.startAtSec === null) {
+        elapsedRef.current = 0;
+        requestAnimationFrame(tick);
+        return;
       }
-      const elapsed = ts - startTimeRef.current;
+      if (startTimeRef.current === null) {
+        startTimeRef.current = (audioClock.startAtSec + audioClock.outputLatencySec) * 1000;
+      }
+      const elapsed = Math.max(0, audioClock.ctx.currentTime * 1000 - startTimeRef.current);
       elapsedRef.current = elapsed;
+
 
       let changed      = false;
       let resolvedCount = 0;

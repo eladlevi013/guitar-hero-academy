@@ -50,7 +50,7 @@ export default function DailyPage() {
 
   const { noteStatuses, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset, combo, maxCombo, lastHitAt }
-    = useGameLoop(level, pitchData, backing.audioWallStartRef);
+    = useGameLoop(level, pitchData, backing.audioClockRef);
 
   const total  = level.notes.length;
   const played = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;

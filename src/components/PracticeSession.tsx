@@ -463,7 +463,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const { noteStatuses, missLabels, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
           combo, maxCombo, lastHitAt } = useGameLoop(
-    level, pitchData, backing.audioWallStartRef, speedMultiplier, isPractice ? "practice" : "timed",
+    level, pitchData, backing.audioClockRef, speedMultiplier, isPractice ? "practice" : "timed",
   );
 
   const [showOnboarding, setShowOnboarding] = useState(false);
