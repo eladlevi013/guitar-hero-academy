@@ -9,8 +9,8 @@ import world2Level6 from "@/data/levels/world2-level6";
 const world2: World = {
   id: "world2",
   number: 2,
-  title: "Beyond the Box",
-  description: "Am pentatonic 4-note groups, ascending and descending sequences, string skipping, position linking. All at higher BPM. The gap between knowing the scale and using it.",
+  title: "Color and Connection",
+  description: "Major and minor sounds, Dorian and Mixolydian color, and chord-tone targeting. This world is about sounding more musical, not just faster.",
   accentColor: "#3a7a6b",
   levels: [
     world2Level1,

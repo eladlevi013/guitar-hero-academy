@@ -9,8 +9,8 @@ import world1Level6 from "@/data/levels/world1-level6";
 const world1: World = {
   id: "world1",
   number: 1,
-  title: "The Fundamentals",
-  description: "Four essential pentatonic exercises — 4-note groups, pedal tone, diatonic 3rds, descending sequences. The techniques that turn a scale shape into something you can actually play.",
+  title: "Scale Groundwork",
+  description: "Open-position control, pentatonic shapes, blues color, interval drills, and the first real hand shifts. This world builds the vocabulary every guitarist actually uses.",
   accentColor: "#f5a623",
   levels: [
     world1Level1,

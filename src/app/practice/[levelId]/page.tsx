@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import world1 from "@/data/world1";
 import world2 from "@/data/world2";
+import world3 from "@/data/world3";
 import PracticeSession from "@/components/PracticeSession";
 
-const ALL_WORLDS = [world1, world2];
+const ALL_WORLDS = [world1, world2, world3];
 
 interface Props {
   params: Promise<{ levelId: string }>;
@@ -18,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const level = world.levels[idx];
     return {
       title: `W${world.number}L${idx + 1} · ${level.title}`,
-      description: `Play "${level.title}" — World ${world.number}, Level ${idx + 1} on Guitar Hero Academy. ${level.notes.length} notes at ${level.bpm} BPM.`,
+      description: `Play "${level.title}" — ${level.subtitle ?? `World ${world.number}, Level ${idx + 1}`} on Guitar Hero Academy. ${level.notes.length} notes at ${level.bpm} BPM.`,
     };
   }
   return { title: "Level Not Found" };

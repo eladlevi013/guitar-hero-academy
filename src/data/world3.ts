@@ -9,8 +9,8 @@ import world3Level6 from "@/data/levels/world3-level6";
 const world3: World = {
   id: "world3",
   number: 3,
-  title: "Technique Forge",
-  description: "Higher positions, faster tempos, and new scale shapes — this is where real technique is forged.",
+  title: "Lead Guitar Lab",
+  description: "Blues sequencing, harder pentatonic technique, string skipping, wide-range runs, and a final mixed phrase workout. This is where practice starts sounding like playing.",
   accentColor: "#a83a1e",
   levels: [
     world3Level1,

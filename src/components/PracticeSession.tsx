@@ -9,6 +9,7 @@ import { useProgress } from "@/hooks/useProgress";
 import TabRail from "@/components/TabRail";
 import { Level } from "@/types/tab";
 import { useAchievements } from "@/hooks/useAchievements";
+import { usePracticeSettings } from "@/hooks/usePracticeSettings";
 
 const IN_TUNE_CENTS = 15;
 const CLOSE_CENTS   = 40;
@@ -456,10 +457,10 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const { note, volume, isListening, error, start, stop } = pitchData;
   const backing = useBackingTrack();
   const { unlock, newest, dismissNewest } = useAchievements();
+  const { settings, setSpeedMultiplier, setMode, setDrumVolume } = usePracticeSettings();
   const [isStarting,       setIsStarting]       = useState(false);
-  const [speedMultiplier,  setSpeedMultiplier]  = useState<0.5 | 0.75 | 1 | 1.25 | 1.5>(1);
-  const [isPractice,       setIsPractice]       = useState(false);
-
+  const speedMultiplier = settings.speedMultiplier;
+  const isPractice = settings.mode === "practice";
   const { noteStatuses, missLabels, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
           combo, maxCombo, lastHitAt } = useGameLoop(
@@ -487,6 +488,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
 
   // When mic starts/errors, clear the loading spinner
   useEffect(() => { if (isListening || error) setIsStarting(false); }, [isListening, error]);
+  useEffect(() => { backing.setVolume(settings.drumVolume); }, [settings.drumVolume]); // eslint-disable-line
 
   // Mark complete with the actual star rating
   useEffect(() => { if (isComplete) markComplete(level.id, stars); }, [isComplete]); // eslint-disable-line
@@ -534,7 +536,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
       if (e.code === "Escape") { stop(); window.location.href = "/practice"; }
       if (!isListening) {
         if (SPEED_KEYS[e.code] !== undefined) setSpeedMultiplier(SPEED_KEYS[e.code]);
-        if (e.code === "KeyM") setIsPractice(p => !p);
+        if (e.code === "KeyM") setMode(isPractice ? "timed" : "practice");
       }
     };
     window.addEventListener("keydown", handler);
@@ -806,7 +808,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                     border: "1px solid rgba(255,255,255,0.1)",
                   }}>
                     {(["timed", "practice"] as const).map(m => (
-                      <button key={m} onClick={() => setIsPractice(m === "practice")} style={{
+                      <button key={m} onClick={() => setMode(m)} style={{
                         padding: "5px 14px", borderRadius: 7, fontSize: 11, fontWeight: 700,
                         cursor: "pointer", transition: "background .12s, color .12s, box-shadow .12s",
                         border: "none",
@@ -844,8 +846,8 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(200,180,140,0.38)", letterSpacing: "0.1em" }}>DRUMS</span>
                   <input type="range" min={0} max={1} step={0.05}
-                    value={backing.volume}
-                    onChange={e => backing.setVolume(parseFloat(e.target.value))}
+                    value={settings.drumVolume}
+                    onChange={e => { const value = parseFloat(e.target.value); setDrumVolume(value); backing.setVolume(value); }}
                     style={{ width: 60, accentColor: accent, cursor: "pointer" }}
                   />
                 </div>
