@@ -1,28 +1,41 @@
 import { Level } from "@/types/tab";
 
-// G Major Phrase — not a scale run. A musical statement in G major.
-// Opens with a G major arpeggio (G-B-D), climbs stepwise to E4, descends back.
-// Tells a complete melodic story: departure, climb, return.
-// 80 BPM, 13 notes, quarter notes throughout.
+// Em Pentatonic — 3-Note Sequences (ascending groups)
+// Instead of a straight scale run, play overlapping 3-note groups:
+// 1-2-3, 2-3-4, 3-4-5, 4-5-6... This is how soloists actually think.
+// Scale notes (box 1): E2, G2, A2, B2, D3, E3, G3, A3
+// Groups: [E2,G2,A2] [G2,A2,B2] [A2,B2,D3] [B2,D3,E3] [D3,E3,G3] [E3,G3,A3]
+// 108 BPM, 1-beat spacing, 18 notes.
 const level: Level = {
   id: "world2-level2",
-  title: "G Major Phrase",
-  description: "G major as a real melodic phrase — not a scale run. An arpeggio launch, a stepwise climb to the top, and a descent back home. This is how solos are actually built.",
-  bpm: 80,
+  title: "Sequences",
+  description: "Em pentatonic in overlapping 3-note groups — 1-2-3, 2-3-4, 3-4-5... This is the most important pattern exercise in soloing. Break the linear habit.",
+  bpm: 108,
   notes: [
-    { id: "n1",  string: 3, fret: 0, targetFrequency: 196.00, durationBeats: 1, startBeat: 0  }, // G3 — root
-    { id: "n2",  string: 2, fret: 0, targetFrequency: 246.94, durationBeats: 1, startBeat: 1  }, // B3 — arpeggio
-    { id: "n3",  string: 2, fret: 3, targetFrequency: 293.66, durationBeats: 1, startBeat: 2  }, // D4 — arpeggio
-    { id: "n4",  string: 2, fret: 0, targetFrequency: 246.94, durationBeats: 1, startBeat: 3  }, // B3 — back
-    { id: "n5",  string: 3, fret: 0, targetFrequency: 196.00, durationBeats: 1, startBeat: 4  }, // G3 — root again
-    { id: "n6",  string: 3, fret: 2, targetFrequency: 220.00, durationBeats: 1, startBeat: 5  }, // A3 — stepwise up
-    { id: "n7",  string: 2, fret: 0, targetFrequency: 246.94, durationBeats: 1, startBeat: 6  }, // B3
-    { id: "n8",  string: 2, fret: 1, targetFrequency: 261.63, durationBeats: 1, startBeat: 7  }, // C4
-    { id: "n9",  string: 2, fret: 3, targetFrequency: 293.66, durationBeats: 1, startBeat: 8  }, // D4
-    { id: "n10", string: 1, fret: 0, targetFrequency: 329.63, durationBeats: 1, startBeat: 9  }, // E4 — peak
-    { id: "n11", string: 2, fret: 3, targetFrequency: 293.66, durationBeats: 1, startBeat: 10 }, // D4 — descend
-    { id: "n12", string: 2, fret: 0, targetFrequency: 246.94, durationBeats: 1, startBeat: 11 }, // B3
-    { id: "n13", string: 3, fret: 0, targetFrequency: 196.00, durationBeats: 2, startBeat: 12 }, // G3 — home
+    // ── Group 1: E2, G2, A2 ───────────────────────────────────────────────────
+    { id: "n1",  string: 6, fret: 0,  targetFrequency: 82.41,  durationBeats: 1, startBeat: 0  }, // E2
+    { id: "n2",  string: 6, fret: 3,  targetFrequency: 98.00,  durationBeats: 1, startBeat: 1  }, // G2
+    { id: "n3",  string: 5, fret: 0,  targetFrequency: 110.00, durationBeats: 1, startBeat: 2  }, // A2
+    // ── Group 2: G2, A2, B2 ───────────────────────────────────────────────────
+    { id: "n4",  string: 6, fret: 3,  targetFrequency: 98.00,  durationBeats: 1, startBeat: 3  }, // G2
+    { id: "n5",  string: 5, fret: 0,  targetFrequency: 110.00, durationBeats: 1, startBeat: 4  }, // A2
+    { id: "n6",  string: 5, fret: 2,  targetFrequency: 123.47, durationBeats: 1, startBeat: 5  }, // B2
+    // ── Group 3: A2, B2, D3 ───────────────────────────────────────────────────
+    { id: "n7",  string: 5, fret: 0,  targetFrequency: 110.00, durationBeats: 1, startBeat: 6  }, // A2
+    { id: "n8",  string: 5, fret: 2,  targetFrequency: 123.47, durationBeats: 1, startBeat: 7  }, // B2
+    { id: "n9",  string: 4, fret: 0,  targetFrequency: 146.83, durationBeats: 1, startBeat: 8  }, // D3
+    // ── Group 4: B2, D3, E3 ───────────────────────────────────────────────────
+    { id: "n10", string: 5, fret: 2,  targetFrequency: 123.47, durationBeats: 1, startBeat: 9  }, // B2
+    { id: "n11", string: 4, fret: 0,  targetFrequency: 146.83, durationBeats: 1, startBeat: 10 }, // D3
+    { id: "n12", string: 4, fret: 2,  targetFrequency: 164.81, durationBeats: 1, startBeat: 11 }, // E3
+    // ── Group 5: D3, E3, G3 ───────────────────────────────────────────────────
+    { id: "n13", string: 4, fret: 0,  targetFrequency: 146.83, durationBeats: 1, startBeat: 12 }, // D3
+    { id: "n14", string: 4, fret: 2,  targetFrequency: 164.81, durationBeats: 1, startBeat: 13 }, // E3
+    { id: "n15", string: 3, fret: 0,  targetFrequency: 196.00, durationBeats: 1, startBeat: 14 }, // G3
+    // ── Group 6: E3, G3, A3 — resolve ─────────────────────────────────────────
+    { id: "n16", string: 4, fret: 2,  targetFrequency: 164.81, durationBeats: 1, startBeat: 15 }, // E3
+    { id: "n17", string: 3, fret: 0,  targetFrequency: 196.00, durationBeats: 1, startBeat: 16 }, // G3
+    { id: "n18", string: 3, fret: 2,  targetFrequency: 220.00, durationBeats: 2, startBeat: 17 }, // A3 — peak, hold
   ],
 };
 

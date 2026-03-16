@@ -4,8 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import world1 from "@/data/world1";
+import world2 from "@/data/world2";
 import { World } from "@/types/tab";
 import { useProgress } from "@/hooks/useProgress";
+
+const ALL_WORLDS = [world1, world2];
 
 // ── Map geometry ──────────────────────────────────────────────────────────────
 const NODES = [
@@ -216,11 +219,14 @@ export default function PracticePage() {
   const router  = useRouter();
   const { isUnlocked } = useProgress();
   const [toast, setToast] = useState<string | null>(null);
+  const [worldIndex, setWorldIndex] = useState(0);
+
+  const activeWorld = ALL_WORLDS[worldIndex];
 
   const handleNodeClick = (levelIndex: number) => {
-    const levelIds = world1.levels.map(l => l.id);
+    const levelIds = activeWorld.levels.map(l => l.id);
     if (isUnlocked(levelIndex, levelIds)) {
-      router.push(`/practice/${world1.levels[levelIndex].id}`);
+      router.push(`/practice/${activeWorld.levels[levelIndex].id}`);
     } else {
       setToast(`Complete Level ${levelIndex} first`);
       setTimeout(() => setToast(null), 2200);
@@ -266,7 +272,7 @@ export default function PracticePage() {
           </Link>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.2em", color: "#c8553d", marginBottom: 1 }}>
-              WORLD {world1.number}
+              WORLD {activeWorld.number}
             </div>
             <span style={{
               fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 900,
@@ -274,23 +280,49 @@ export default function PracticePage() {
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}>
-              {world1.title}
+              {activeWorld.title}
             </span>
           </div>
           <div style={{ width: 60 }} />
         </header>
 
+        {/* ── World tabs ───────────────────────────────────────────────────── */}
+        <div style={{
+          display: "flex", justifyContent: "center", gap: 8,
+          padding: "10px 24px 0",
+          flexShrink: 0,
+        }}>
+          {ALL_WORLDS.map((w, i) => (
+            <button
+              key={w.id}
+              onClick={() => setWorldIndex(i)}
+              style={{
+                padding: "5px 18px", borderRadius: 20, border: "none",
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                background: i === worldIndex
+                  ? "rgba(200,85,61,0.18)"
+                  : "rgba(255,255,255,0.04)",
+                color: i === worldIndex ? "#f0e8d8" : "rgba(220,196,160,0.35)",
+                outline: i === worldIndex ? "1px solid rgba(200,85,61,0.35)" : "1px solid rgba(255,255,255,0.07)",
+                transition: "all 0.15s",
+              }}
+            >
+              W{w.number} · {w.title}
+            </button>
+          ))}
+        </div>
+
         {/* ── Map area ─────────────────────────────────────────────────────── */}
         <div style={{
           flex: 1, overflow: "hidden",
           display: "flex", justifyContent: "center", alignItems: "center",
-          padding: "16px 24px",
+          padding: "12px 24px 16px",
         }}>
           <div style={{
             height: "100%", maxWidth: 360, width: "100%",
             display: "flex", justifyContent: "center", alignItems: "center",
           }}>
-            <WorldMap world={world1} onNodeClick={handleNodeClick} />
+            <WorldMap world={activeWorld} onNodeClick={handleNodeClick} />
           </div>
         </div>
 

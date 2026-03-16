@@ -56,7 +56,7 @@ export default function DailyPage() {
   const played = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;
 
   useEffect(() => {
-    if (isListening && !backing.isPlaying) backing.start(level.bpm, level.notes, leadInMs);
+    if (isListening && !backing.isPlaying) backing.start(beatMs, level.notes, leadInMs);
     if (!isListening && backing.isPlaying)  backing.stop();
   }, [isListening]); // eslint-disable-line
 

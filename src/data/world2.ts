@@ -9,8 +9,8 @@ import world2Level6 from "@/data/levels/world2-level6";
 const world2: World = {
   id: "world2",
   number: 2,
-  title: "Scale Lab",
-  description: "Pentatonic scales, major scales, the blues scale — the tools every guitarist needs. Learn the shapes slow, then push the tempo until they feel automatic.",
+  title: "Beyond the Box",
+  description: "Am pentatonic, string skipping, 3-note sequences, position linking. The techniques that turn scale knowledge into real soloing vocabulary.",
   accentColor: "#3a7a6b",
   levels: [
     world2Level1,

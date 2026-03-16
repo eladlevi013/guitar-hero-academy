@@ -318,10 +318,6 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const [isStarting,       setIsStarting]       = useState(false);
   const [speedMultiplier,  setSpeedMultiplier]  = useState<0.5 | 0.75 | 1 | 1.25 | 1.5>(1);
   const [isPractice,       setIsPractice]       = useState(false);
-  // userSyncMs compensates for browser outputLatency being unreliable (esp. Windows Chrome).
-  // Default 100 ms covers the typical case where outputLatency reports 0 but real latency is ~100–150 ms.
-  // If the kick sounds AFTER the note reaches the marker → increase. If before → decrease.
-  const [userSyncMs,       setUserSyncMs]       = useState(100);
 
   const { noteStatuses, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
@@ -352,7 +348,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     if (isComplete && backing.isPlaying) backing.stop();
   }, [isComplete]); // eslint-disable-line
   useEffect(() => {
-    if (isListening && !backing.isPlaying) backing.start(level.bpm * speedMultiplier, level.notes, leadInMs, userSyncMs);
+    if (isListening && !backing.isPlaying && !isPractice) backing.start(beatMs, level.notes, leadInMs);
     if (!isListening && backing.isPlaying) backing.stop();
   }, [isListening]); // eslint-disable-line
   useEffect(() => () => { backing.stop(); }, []); // eslint-disable-line
@@ -611,23 +607,6 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                 display: "flex", flexDirection: "column", gap: 14,
               }}>
 
-                {/* SYNC row */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>SYNC</span>
-                  <input
-                    type="range" min={0} max={250} step={10}
-                    value={userSyncMs}
-                    onChange={e => setUserSyncMs(Number(e.target.value))}
-                    style={{ flex: 1, accentColor: accent, cursor: "pointer" }}
-                  />
-                  <span style={{ fontSize: 12, fontWeight: 800, color: accent, minWidth: 44, textAlign: "right", flexShrink: 0 }}>
-                    {userSyncMs}ms
-                  </span>
-                  <span style={{ fontSize: 10, color: "rgba(200,180,140,0.28)", flexShrink: 0 }}>
-                    ↑ if kick sounds after marker
-                  </span>
-                </div>
-
                 {/* SPEED row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>SPEED</span>
@@ -686,15 +665,17 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                 </div>
               </div>
 
-              {/* Drum volume — always shown */}
-              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(200,180,140,0.38)", letterSpacing: "0.1em" }}>DRUMS</span>
-                <input type="range" min={0} max={1} step={0.05}
-                  value={backing.volume}
-                  onChange={e => backing.setVolume(parseFloat(e.target.value))}
-                  style={{ width: 60, accentColor: accent, cursor: "pointer" }}
-                />
-              </div>
+              {/* Drum volume — only in timed mode */}
+              {!isPractice && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(200,180,140,0.38)", letterSpacing: "0.1em" }}>DRUMS</span>
+                  <input type="range" min={0} max={1} step={0.05}
+                    value={backing.volume}
+                    onChange={e => backing.setVolume(parseFloat(e.target.value))}
+                    style={{ width: 60, accentColor: accent, cursor: "pointer" }}
+                  />
+                </div>
+              )}
 
               <div style={{ flex: 1 }} />
 

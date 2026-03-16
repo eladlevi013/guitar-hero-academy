@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import world1 from "@/data/world1";
+import world2 from "@/data/world2";
 import { useProgress } from "@/hooks/useProgress";
 
-const ALL_WORLDS = [world1];
+const ALL_WORLDS = [world1, world2];
 
 const WORLD_META: Record<string, {
   accent: string; diffLabel: string; diffColor: string; levelColors: string[];
@@ -14,6 +15,10 @@ const WORLD_META: Record<string, {
   world1: {
     accent: "#c8553d", diffLabel: "Intermediate", diffColor: "#c47c2a",
     levelColors: ["#c8553d","#c47c2a","#5c8a42","#3a7a6b","#3a5a8a","#7a4a8a"],
+  },
+  world2: {
+    accent: "#3a7a6b", diffLabel: "Advanced", diffColor: "#3a7a6b",
+    levelColors: ["#3a7a6b","#3a5a8a","#7a4a8a","#c8553d","#8a3a20","#4e2860"],
   },
 };
 
@@ -169,8 +174,8 @@ export default function Home() {
             color: "rgba(220,196,160,0.65)",
             maxWidth: 460, margin: "0 auto", lineHeight: 1.75,
           }}>
-            A real-time scale trainer. Play through the Em pentatonic positions
-            across the neck — the app listens, detects pitch, and scores every note.
+            A real-time scale trainer. Play through pentatonic positions,
+            sequences, and advanced techniques — the app listens, detects pitch, and scores every note.
           </p>
         </div>
 
@@ -206,9 +211,9 @@ export default function Home() {
           marginTop: 8,
         }}>
           {[
-            { n: "5", label: "Positions" },
-            { n: "6", label: "Levels" },
-            { n: "120", label: "Max BPM" },
+            { n: "2", label: "Worlds" },
+            { n: "12", label: "Levels" },
+            { n: "130", label: "Max BPM" },
           ].map(s => (
             <div key={s.label} style={{ textAlign: "center" }}>
               <div style={{
@@ -316,17 +321,15 @@ export default function Home() {
                         cursor: unlocked ? "pointer" : "not-allowed",
                         opacity: unlocked ? 1 : 0.32,
                         textAlign: "left",
-                        transition: "transform 0.15s, background 0.15s, box-shadow 0.15s",
+                        transition: "background 0.15s, box-shadow 0.15s",
                         outline: "none",
                       }}
                       onMouseEnter={e => {
                         if (!unlocked) return;
-                        e.currentTarget.style.transform = "translateY(-3px)";
-                        e.currentTarget.style.background = `linear-gradient(145deg, rgba(255,255,255,0.11) 0%, ${color}1a 100%)`;
-                        e.currentTarget.style.boxShadow = `0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px ${color}30`;
+                        e.currentTarget.style.background = `linear-gradient(145deg, rgba(255,255,255,0.13) 0%, ${color}22 100%)`;
+                        e.currentTarget.style.boxShadow = `0 0 0 1px ${color}50, 0 8px 24px rgba(0,0,0,0.35)`;
                       }}
                       onMouseLeave={e => {
-                        e.currentTarget.style.transform = "translateY(0)";
                         e.currentTarget.style.background = unlocked
                           ? `linear-gradient(145deg, rgba(255,255,255,0.07) 0%, ${color}10 100%)`
                           : "rgba(255,255,255,0.02)";
@@ -374,7 +377,7 @@ export default function Home() {
         {[
           { icon: "🎸", title: "Real-time pitch",          desc: "YIN algorithm, works with acoustic & electric guitar" },
           { icon: "🎯", title: "Rhythm scoring",           desc: "Only counts if you hit the right note at the right time" },
-          { icon: "🏆", title: "5 pentatonic positions",   desc: "All CAGED shapes of Em pentatonic, 95–120 BPM" },
+          { icon: "🏆", title: "2 worlds · 12 levels",       desc: "Em & Am pentatonic, string skipping, position linking, 95–130 BPM" },
         ].map(f => (
           <div key={f.title} style={{ textAlign: "center", maxWidth: 200 }}>
             <div style={{ fontSize: 22, marginBottom: 8 }}>{f.icon}</div>

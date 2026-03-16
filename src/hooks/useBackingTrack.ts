@@ -99,84 +99,59 @@ export function useBackingTrack() {
   /**
    * Start the drum backing track.
    *
-   * Drums only — no bass, no pad, no guide melody.  Clean and clear so the
-   * player's own guitar is the only pitched sound they hear.
+   * beatMs is the exact same value useGameLoop uses to advance the tab rail —
+   * passed in directly so both clocks share the identical float and are
+   * mathematically locked with no BPM re-derivation.
    *
-   * The kick fires on every note's exact start beat so the drum literally says
-   * "play this note NOW."  The snare provides backbeat groove on bar-beat 3.
-   *
-   * Timing: audioWallStartRef is shifted forward by the audio output latency so
-   * the game's visual playhead lines up with when the player HEARS the kick,
-   * not when it was scheduled.
+   * Pattern (4/4): kick beat 1, snare beat 3, hi-hat every beat + off-beat.
+   * No per-note kicks — the groove is a steady bar pattern across the whole song.
    */
-  const start = useCallback((bpm: number, notes: TabNote[], leadInMs: number, userLatencyOffsetMs = 100) => {
+  const start = useCallback((beatMs: number, notes: TabNote[], leadInMs: number) => {
     stop();
 
     const ctx = new AudioContext();
     ctxRef.current = ctx;
 
-    // Shift the game-clock reference by output latency so the note hits the
-    // visual playhead exactly when the player HEARS the kick drum.
-    //
-    // browser.outputLatency is unreliable (often 0 on Windows Chrome/Edge).
-    // userLatencyOffsetMs is a user-adjustable correction — default 100ms
-    // covers the typical Windows Chrome case where outputLatency = 0 but
-    // real hardware latency is 80–200 ms.
-    const rawLatency = (ctx as AudioContext & { outputLatency?: number }).outputLatency
-                    ?? ctx.baseLatency
-                    ?? 0;
-    const detectedMs = Math.max(0, rawLatency * 1000);
-    audioWallStartRef.current = performance.now() + detectedMs + userLatencyOffsetMs;
+    const outputLatency = (ctx as AudioContext & { outputLatency?: number }).outputLatency
+                       ?? ctx.baseLatency
+                       ?? 0;
+    audioWallStartRef.current = performance.now() + Math.max(0, outputLatency * 1000);
+    console.log("[BackingTrack] outputLatency:", outputLatency.toFixed(4), "s");
 
     const master = ctx.createGain();
     master.gain.value = volume;
     master.connect(ctx.destination);
     masterRef.current = master;
 
-    const beatSec     = 60 / bpm;
+    // Use the caller's beatMs directly — same float as the game loop clock.
+    const beatSec     = beatMs / 1000;
     const leadInSec   = leadInMs / 1000;
     const leadInBeats = Math.round(leadInSec / beatSec); // = LEAD_IN_BEATS (4)
     const now         = ctx.currentTime;
+    const safeT       = (t: number) => Math.max(ctx.currentTime + 0.001, t);
 
     const lastNote   = notes.length > 0 ? notes[notes.length - 1] : null;
     const songBeats  = lastNote ? lastNote.startBeat + lastNote.durationBeats + 4 : 8;
     const totalBeats = leadInBeats + songBeats;
 
-    // Set of song-beat positions where notes start
-    const noteStartBeats = new Set(notes.map(n => n.startBeat));
-
-    // ── Drums ─────────────────────────────────────────────────────────────────
-    // Count-in: steady kick every 4 beats, snare on beat 3, hat every beat.
-    // Song:     kick on every note's start beat, snare on bar-beat 3, hat every beat.
+    // ── Drums — strict 4/4 bar pattern ────────────────────────────────────────
+    // Shift every event back by outputLatency so sound arrives at speakers in sync
+    // with when the game loop expects the beat to land.
     for (let b = 0; b < totalBeats; b++) {
-      const t        = now + b * beatSec;
-      const songBeat = b - leadInBeats; // negative = count-in
+      const t       = safeT(now + b * beatSec - outputLatency);
+      const barBeat = b % 4; // 0 = beat 1, 2 = beat 3
 
-      const isNotebeat = songBeat >= 0 && noteStartBeats.has(songBeat);
-      const isCountIn  = songBeat < 0;
-
-      // Kick
-      if (isNotebeat || (isCountIn && b % 4 === 0)) {
-        playKick(ctx, master, t);
-      }
-
-      // Snare: bar beat 3 (backbeat)
-      if (b % 4 === 2) {
-        playSnare(ctx, master, t);
-      }
-
-      // Hi-hat on every beat
-      playHat(ctx, master, t);
-
-      // Lighter off-beat hi-hat
+      if (barBeat === 0) playKick(ctx, master, t);   // beat 1
+      if (barBeat === 2) playSnare(ctx, master, t);  // beat 3
+      playHat(ctx, master, t);                        // every beat
       if (b < totalBeats - 1) {
-        playHat(ctx, master, t + beatSec * 0.5, 0.09);
+        playHat(ctx, master, safeT(t + beatSec * 0.5), 0.09); // off-beat
       }
     }
 
-    // Crash on the first note (song downbeat)
+    // Crash cymbal on the song downbeat (first note)
     if (notes.length > 0) {
-      playCrash(ctx, master, now + leadInSec);
+      playCrash(ctx, master, safeT(now + leadInSec - outputLatency));
     }
 
     setIsPlaying(true);
