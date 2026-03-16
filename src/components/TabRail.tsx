@@ -25,6 +25,7 @@ function stringY(s: number) {
 interface Props {
   notes        : TabNote[];
   noteStatuses : ReadonlyMap<string, NoteStatus>;
+  missLabels  ?: ReadonlyMap<string, string>;       // noteId → note name played or "silent"
   elapsedRef   : React.MutableRefObject<number>;
   beatMs       : number;
   leadInMs     : number;
@@ -32,7 +33,7 @@ interface Props {
   combo        ?: number;                           // current streak (for rail color)
 }
 
-function TabRailInner({ notes, noteStatuses, elapsedRef, beatMs, leadInMs, lastHitAt, combo }: Props) {
+function TabRailInner({ notes, noteStatuses, missLabels, elapsedRef, beatMs, leadInMs, lastHitAt, combo }: Props) {
   const trackRef    = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const glowRef     = useRef<HTMLDivElement>(null);
@@ -222,6 +223,8 @@ function TabRailInner({ notes, noteStatuses, elapsedRef, beatMs, leadInMs, lastH
                        : isActive ? `0 0 18px ${color}cc, 0 0 36px ${color}44`
                                   : "none";
 
+          const missLabel = isMissed && missLabels ? missLabels.get(note.id) : undefined;
+
           return (
             <div key={note.id} style={{
               position: "absolute",
@@ -232,8 +235,29 @@ function TabRailInner({ notes, noteStatuses, elapsedRef, beatMs, leadInMs, lastH
               fontWeight: 900, fontSize: isActive ? 13 : 11,
               background: bg, border: bd, color: fg, boxShadow: sh,
               animation: isHit ? "noteHitPop 0.4s ease-out" : "none",
+              overflow: "visible",
             }}>
               {note.fret === 0 ? "O" : note.fret}
+              {missLabel !== undefined && (
+                <div style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: "50%",
+                  marginTop: 3,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.02em",
+                  color: missLabel === "silent"
+                    ? "rgba(200,180,140,0.38)"
+                    : "rgba(239,68,68,0.72)",
+                  animation: "missLabelFade 2s ease-out forwards",
+                  pointerEvents: "none",
+                  userSelect: "none",
+                  whiteSpace: "nowrap",
+                }}>
+                  {missLabel}
+                </div>
+              )}
             </div>
           );
         })}

@@ -10,7 +10,7 @@ const world2: World = {
   id: "world2",
   number: 2,
   title: "Beyond the Box",
-  description: "Am pentatonic, string skipping, 3-note sequences, position linking. The techniques that turn scale knowledge into real soloing vocabulary.",
+  description: "Am pentatonic 4-note groups, ascending and descending sequences, string skipping, position linking. All at higher BPM. The gap between knowing the scale and using it.",
   accentColor: "#3a7a6b",
   levels: [
     world2Level1,

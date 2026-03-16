@@ -6,7 +6,9 @@
       "Bash(ls:*)",
       "Bash(npx tsc:*)",
       "WebSearch",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:appliedguitartheory.com)",
+      "Bash(echo:*)"
     ]
   }
 }

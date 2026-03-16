@@ -305,6 +305,147 @@ function LevelComplete({ level, levelNum, hits, total, stars, maxCombo, accent, 
   );
 }
 
+// ── Onboarding Modal ──────────────────────────────────────────────────────────
+const ONBOARD_KEY = "gha-v1-onboarded";
+
+function MiniRailPreview() {
+  return (
+    <div style={{
+      width: "100%", height: 80,
+      background: "linear-gradient(180deg, #100c1e 0%, #1a1030 100%)",
+      borderRadius: 14, border: "1px solid rgba(255,255,255,0.07)",
+      position: "relative", overflow: "hidden", flexShrink: 0,
+    }}>
+      <div style={{ position: "absolute", left: 90, top: 8, bottom: 8, width: 2, borderRadius: 2, background: "rgba(255,255,255,0.85)" }} />
+      {/* Hit note */}
+      <div style={{
+        position: "absolute", left: 70, top: "50%", marginTop: -14,
+        width: 28, height: 28, borderRadius: "50%",
+        background: "#22c55e", border: "2px solid #16a34a",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 10, fontWeight: 900, color: "white",
+        boxShadow: "0 0 12px rgba(34,197,94,0.7)",
+      }}>5</div>
+      <div style={{
+        position: "absolute", left: 61, top: "50%", marginTop: 16,
+        fontSize: 8, fontWeight: 700, color: "rgba(34,197,94,0.7)",
+        background: "rgba(20,5,20,0.6)", padding: "1px 4px", borderRadius: 3,
+      }}>HIT</div>
+      {/* Miss note */}
+      <div style={{
+        position: "absolute", left: 180, top: "28%", marginTop: -14,
+        width: 28, height: 28, borderRadius: "50%",
+        background: "rgba(239,68,68,0.12)", border: "1.5px solid rgba(239,68,68,0.3)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 10, fontWeight: 900, color: "rgba(239,68,68,0.5)",
+      }}>7</div>
+      <div style={{
+        position: "absolute", left: 171, top: "28%", marginTop: 16,
+        fontSize: 8, fontWeight: 700, color: "rgba(239,68,68,0.65)",
+        background: "rgba(20,5,20,0.6)", padding: "1px 4px", borderRadius: 3,
+      }}>G#3</div>
+    </div>
+  );
+}
+
+function OnboardingModal({ onDone }: { onDone: () => void }) {
+  const [screen, setScreen] = useState(0);
+
+  const screens = [
+    {
+      icon: "🎸",
+      title: "Play near your mic or plug in",
+      body: "Use your phone, laptop mic, or a direct input — whatever gets your guitar signal in.",
+    },
+    {
+      icon: "🎤",
+      title: "Allow microphone when prompted",
+      body: "When you tap Start, your browser will ask for mic access. Allow it to enable pitch detection.",
+    },
+    {
+      icon: null,
+      title: "Hit the notes as they scroll",
+      body: "Notes come from the right. Play each one as it reaches the white line.",
+    },
+  ];
+
+  function dismiss() {
+    try { localStorage.setItem(ONBOARD_KEY, "1"); } catch {}
+    onDone();
+  }
+
+  const current = screens[screen];
+  const isLast  = screen === screens.length - 1;
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 300,
+      background: "rgba(4,2,10,0.92)", backdropFilter: "blur(8px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24,
+    }}>
+      <div style={{
+        background: "rgba(14,8,32,0.98)",
+        border: "1px solid rgba(200,85,61,0.3)",
+        borderRadius: 28,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(200,85,61,0.1)",
+        padding: "36px 28px",
+        maxWidth: 360, width: "100%",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 22,
+        animation: "modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+      }}>
+        {/* Step dots */}
+        <div style={{ display: "flex", gap: 6 }}>
+          {screens.map((_, i) => (
+            <div key={i} style={{
+              width: i === screen ? 20 : 6, height: 6, borderRadius: 3,
+              background: i === screen ? "#c8553d" : "rgba(255,255,255,0.15)",
+              transition: "all .25s",
+            }} />
+          ))}
+        </div>
+
+        {/* Visual */}
+        {screen === 2
+          ? <MiniRailPreview />
+          : <div style={{ fontSize: 52, lineHeight: 1 }}>{current.icon}</div>
+        }
+
+        {/* Text */}
+        <div style={{ textAlign: "center" }}>
+          <h2 style={{ fontSize: 19, fontWeight: 900, color: "#f0e8d8", marginBottom: 10, lineHeight: 1.3 }}>
+            {current.title}
+          </h2>
+          <p style={{ fontSize: 13, color: "rgba(200,180,140,0.6)", lineHeight: 1.6, margin: 0 }}>
+            {current.body}
+          </p>
+        </div>
+
+        {/* Buttons */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+          <button
+            onClick={isLast ? dismiss : () => setScreen(s => s + 1)}
+            style={{
+              padding: "14px", borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: "pointer",
+              background: "linear-gradient(135deg, #c8553d, #9a3821)",
+              color: "white", border: "none",
+              boxShadow: "0 4px 0 rgba(154,56,33,0.6), 0 8px 24px rgba(200,85,61,0.35)",
+            }}
+          >{isLast ? "Got it" : "Next →"}</button>
+          <button
+            onClick={dismiss}
+            style={{
+              padding: "11px", borderRadius: 14, fontWeight: 600, fontSize: 13, cursor: "pointer",
+              background: "transparent", color: "rgba(200,180,140,0.35)",
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >Skip</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Inner session ─────────────────────────────────────────────────────────────
 function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   level: Level; levelNum: number; worldNum: number;
@@ -319,11 +460,16 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const [speedMultiplier,  setSpeedMultiplier]  = useState<0.5 | 0.75 | 1 | 1.25 | 1.5>(1);
   const [isPractice,       setIsPractice]       = useState(false);
 
-  const { noteStatuses, activeNote, score, stars, hits, isComplete,
+  const { noteStatuses, missLabels, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
           combo, maxCombo, lastHitAt } = useGameLoop(
     level, pitchData, backing.audioWallStartRef, speedMultiplier, isPractice ? "practice" : "timed",
   );
+
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    try { if (!localStorage.getItem(ONBOARD_KEY)) setShowOnboarding(true); } catch {}
+  }, []);
 
   const total   = level.notes.length;
   const played  = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;
@@ -373,6 +519,9 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   }, [isComplete, stars, hits, level.notes.length, unlock]);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
+  const SPEED_KEYS: Record<string, 0.5 | 0.75 | 1 | 1.25 | 1.5> = {
+    "Digit1": 0.5, "Digit2": 0.75, "Digit3": 1, "Digit4": 1.25, "Digit5": 1.5,
+  };
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -383,6 +532,10 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
       }
       if (e.code === "KeyR" && !isListening) { onRestart(); }
       if (e.code === "Escape") { stop(); window.location.href = "/practice"; }
+      if (!isListening) {
+        if (SPEED_KEYS[e.code] !== undefined) setSpeedMultiplier(SPEED_KEYS[e.code]);
+        if (e.code === "KeyM") setIsPractice(p => !p);
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -563,6 +716,7 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
             <TabRail
               notes={level.notes}
               noteStatuses={noteStatuses}
+              missLabels={missLabels}
               elapsedRef={elapsedRef}
               beatMs={beatMs}
               leadInMs={leadInMs}
@@ -604,46 +758,66 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
               <div style={{
                 padding: "16px 20px",
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
-                display: "flex", flexDirection: "column", gap: 14,
+                display: "flex", flexDirection: "column", gap: 16,
               }}>
 
                 {/* SPEED row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>SPEED</span>
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 52, flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.65)", letterSpacing: "0.15em" }}>SPEED</div>
+                    <div style={{ fontSize: 8, color: "rgba(200,180,140,0.3)", marginTop: 1 }}>keys 1–5</div>
+                  </div>
+                  {/* Segmented control */}
+                  <div style={{
+                    display: "flex", background: "rgba(255,255,255,0.05)",
+                    borderRadius: 10, padding: 3, gap: 2,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}>
                     {([0.5, 0.75, 1, 1.25, 1.5] as const).map(s => (
                       <button key={s} onClick={() => setSpeedMultiplier(s)} style={{
-                        padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-                        cursor: "pointer", transition: "all .12s",
-                        background: speedMultiplier === s ? accent : "rgba(255,255,255,0.07)",
-                        color: speedMultiplier === s ? "white" : "rgba(200,180,140,0.45)",
-                        border: `1px solid ${speedMultiplier === s ? accent : "rgba(255,255,255,0.1)"}`,
-                        boxShadow: speedMultiplier === s ? `0 0 12px ${accent}55` : "none",
+                        padding: "5px 9px", borderRadius: 7, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", transition: "background .12s, color .12s, box-shadow .12s",
+                        border: "none",
+                        background: speedMultiplier === s ? accent : "transparent",
+                        color: speedMultiplier === s ? "white" : "rgba(200,180,140,0.5)",
+                        boxShadow: speedMultiplier === s ? `0 0 10px ${accent}55` : "none",
                       }}>{s === 1 ? "1×" : `${s}×`}</button>
                     ))}
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(200,180,140,0.5)", marginLeft: 4 }}>
+                  <span style={{
+                    fontSize: 12, fontWeight: 800, color: "rgba(200,180,140,0.75)",
+                    background: "rgba(255,255,255,0.06)", borderRadius: 6, padding: "3px 8px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}>
                     {Math.round(level.bpm * speedMultiplier)} BPM
                   </span>
                 </div>
 
                 {/* MODE row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>MODE</span>
-                  <div style={{ display: "flex", gap: 4 }}>
+                  <div style={{ minWidth: 52, flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.65)", letterSpacing: "0.15em" }}>MODE</div>
+                    <div style={{ fontSize: 8, color: "rgba(200,180,140,0.3)", marginTop: 1 }}>key M</div>
+                  </div>
+                  {/* Segmented control */}
+                  <div style={{
+                    display: "flex", background: "rgba(255,255,255,0.05)",
+                    borderRadius: 10, padding: 3, gap: 2,
+                    border: "1px solid rgba(255,255,255,0.1)",
+                  }}>
                     {(["timed", "practice"] as const).map(m => (
                       <button key={m} onClick={() => setIsPractice(m === "practice")} style={{
-                        padding: "5px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-                        cursor: "pointer", transition: "all .12s",
-                        background: (m === "practice") === isPractice ? accent : "rgba(255,255,255,0.07)",
-                        color: (m === "practice") === isPractice ? "white" : "rgba(200,180,140,0.45)",
-                        border: `1px solid ${(m === "practice") === isPractice ? accent : "rgba(255,255,255,0.1)"}`,
-                        boxShadow: (m === "practice") === isPractice ? `0 0 12px ${accent}55` : "none",
+                        padding: "5px 14px", borderRadius: 7, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", transition: "background .12s, color .12s, box-shadow .12s",
+                        border: "none",
+                        background: (m === "practice") === isPractice ? accent : "transparent",
+                        color: (m === "practice") === isPractice ? "white" : "rgba(200,180,140,0.5)",
+                        boxShadow: (m === "practice") === isPractice ? `0 0 10px ${accent}55` : "none",
                       }}>{m === "timed" ? "Timed" : "Practice"}</button>
                     ))}
                   </div>
                   {isPractice && (
-                    <span style={{ fontSize: 10, color: "rgba(200,180,140,0.28)" }}>no score · play at your own pace</span>
+                    <span style={{ fontSize: 10, color: "rgba(200,180,140,0.32)", fontStyle: "italic" }}>no score</span>
                   )}
                 </div>
               </div>
@@ -723,17 +897,19 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
 
           {/* Keyboard hints — only when not playing */}
           {!isListening && (
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", paddingBottom: 8 }}>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center", paddingBottom: 8, flexWrap: "wrap" }}>
               {[
-                { key: "Space", label: "Start / Stop" },
+                { key: "Space", label: "Start" },
                 { key: "R",     label: "Restart" },
                 { key: "Esc",   label: "Map" },
+                { key: "1–5",   label: "Speed" },
+                { key: "M",     label: "Mode" },
               ].map(({ key, label }) => (
                 <div key={key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.18)" }}>
                   <kbd style={{
                     background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 4, padding: "1px 5px", fontSize: 9, fontFamily: "monospace",
-                    color: "rgba(255,255,255,0.22)",
+                    color: "rgba(255,255,255,0.25)",
                   }}>{key}</kbd>
                   <span>{label}</span>
                 </div>
@@ -742,6 +918,9 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
           )}
         </div>
       </div>
+
+      {/* First-time onboarding */}
+      {showOnboarding && <OnboardingModal onDone={() => setShowOnboarding(false)} />}
 
       {/* Achievement toast */}
       {newest && (

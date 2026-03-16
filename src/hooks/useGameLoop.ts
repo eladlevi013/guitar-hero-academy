@@ -13,11 +13,19 @@ function centsOff(detected: number, target: number) {
   return 1200 * Math.log2(detected / target);
 }
 
+const NOTE_NAMES_GL = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+function freqToNoteName(f: number): string {
+  const midi = 12 * Math.log2(f / 440) + 69;
+  const r    = Math.round(midi);
+  return NOTE_NAMES_GL[((r % 12) + 12) % 12] + (Math.floor(r / 12) - 1);
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 export type NoteStatus = "pending" | "active" | "hit" | "missed";
 
 export interface GameLoopReturn {
   noteStatuses : ReadonlyMap<string, NoteStatus>;
+  missLabels   : ReadonlyMap<string, string>;   // noteId → note name played, or "silent"
   activeNote   : TabNote | null;   // note currently in its hit window
   score        : number;           // 0–100 percentage
   stars        : 0 | 1 | 2 | 3;
@@ -53,11 +61,14 @@ export function useGameLoop(
   const hitsRef           = useRef(0);
   const comboRef          = useRef(0);
   const maxComboRef       = useRef(0);
-  const lastHitAt         = useRef(0);  // rAF timestamp, read by TabRail for flash
-  const practiceIdxRef    = useRef(0);  // current note index in practice mode
+  const lastHitAt             = useRef(0);  // rAF timestamp, read by TabRail for flash
+  const practiceIdxRef        = useRef(0);  // current note index in practice mode
+  const missLabelsRef         = useRef<Map<string, string>>(new Map());
+  const activeNoteLastFreqRef = useRef<Map<string, number>>(new Map());
 
   // ── React state — updated only on meaningful events ───────────────────────
   const [noteStatuses, setNoteStatuses] = useState<Map<string, NoteStatus>>(new Map());
+  const [missLabels,   setMissLabels]   = useState<Map<string, string>>(new Map());
   const [hits,         setHits]         = useState(0);
   const [isComplete,   setIsComplete]   = useState(false);
   const [combo,        setCombo]        = useState(0);
@@ -69,17 +80,20 @@ export function useGameLoop(
   // ── Reset on level change ─────────────────────────────────────────────────
   useEffect(() => {
     const fresh = new Map(level.notes.map(n => [n.id, "pending" as NoteStatus]));
-    statusesRef.current       = fresh;
-    startTimeRef.current      = null;
-    elapsedRef.current        = 0;
-    requireReleaseRef.current = false;
-    lastHitFreqRef.current    = null;
-    hitsRef.current           = 0;
-    comboRef.current          = 0;
-    maxComboRef.current       = 0;
-    lastHitAt.current         = 0;
-    practiceIdxRef.current    = 0;
+    statusesRef.current             = fresh;
+    startTimeRef.current            = null;
+    elapsedRef.current              = 0;
+    requireReleaseRef.current       = false;
+    lastHitFreqRef.current          = null;
+    hitsRef.current                 = 0;
+    comboRef.current                = 0;
+    maxComboRef.current             = 0;
+    lastHitAt.current               = 0;
+    practiceIdxRef.current          = 0;
+    missLabelsRef.current           = new Map();
+    activeNoteLastFreqRef.current   = new Map();
     setNoteStatuses(new Map(fresh));
+    setMissLabels(new Map());
     setHits(0);
     setCombo(0);
     setMaxCombo(0);
@@ -92,17 +106,20 @@ export function useGameLoop(
 
     // Fresh reset at start of each listening session
     const fresh = new Map(level.notes.map(n => [n.id, "pending" as NoteStatus]));
-    statusesRef.current       = fresh;
-    startTimeRef.current      = null; // set on first rAF tick from audioWallStartRef
-    elapsedRef.current        = 0;
-    requireReleaseRef.current = false;
-    lastHitFreqRef.current    = null;
-    hitsRef.current           = 0;
-    comboRef.current          = 0;
-    maxComboRef.current       = 0;
-    lastHitAt.current         = 0;
-    practiceIdxRef.current    = 0;
+    statusesRef.current             = fresh;
+    startTimeRef.current            = null; // set on first rAF tick from audioWallStartRef
+    elapsedRef.current              = 0;
+    requireReleaseRef.current       = false;
+    lastHitFreqRef.current          = null;
+    hitsRef.current                 = 0;
+    comboRef.current                = 0;
+    maxComboRef.current             = 0;
+    lastHitAt.current               = 0;
+    practiceIdxRef.current          = 0;
+    missLabelsRef.current           = new Map();
+    activeNoteLastFreqRef.current   = new Map();
     setNoteStatuses(new Map(fresh));
+    setMissLabels(new Map());
     setHits(0);
     setCombo(0);
     setMaxCombo(0);
@@ -213,6 +230,8 @@ export function useGameLoop(
 
         if (elapsed > winEnd) {
           statusesRef.current.set(note.id, "missed");
+          const lastFreq = activeNoteLastFreqRef.current.get(note.id);
+          missLabelsRef.current.set(note.id, lastFreq ? freqToNoteName(lastFreq) : "silent");
           // Break combo on miss
           comboRef.current = 0;
           resolvedCount++;
@@ -223,6 +242,8 @@ export function useGameLoop(
             changed = true;
           }
           const freq = pitchFreqRef.current;
+          // Track last detected freq for miss label (in case this note is missed)
+          if (freq) activeNoteLastFreqRef.current.set(note.id, freq);
           if (freq && !requireReleaseRef.current) {
             const cents = centsOff(freq, note.targetFrequency);
             if (Math.abs(cents) <= CENTS_THRESHOLD) {
@@ -244,6 +265,7 @@ export function useGameLoop(
 
       if (changed) {
         setNoteStatuses(new Map(statusesRef.current));
+        setMissLabels(new Map(missLabelsRef.current));
         setHits(hitsRef.current);
         setCombo(comboRef.current);
         setMaxCombo(maxComboRef.current);
@@ -261,10 +283,15 @@ export function useGameLoop(
           const s = statusesRef.current.get(note.id)!;
           if (s === "pending" || s === "active") {
             statusesRef.current.set(note.id, "missed");
+            const lastFreq = activeNoteLastFreqRef.current.get(note.id);
+            missLabelsRef.current.set(note.id, lastFreq ? freqToNoteName(lastFreq) : "silent");
             extra = true;
           }
         }
-        if (extra) setNoteStatuses(new Map(statusesRef.current));
+        if (extra) {
+          setNoteStatuses(new Map(statusesRef.current));
+          setMissLabels(new Map(missLabelsRef.current));
+        }
         setIsComplete(true);
         return;
       }
@@ -286,7 +313,7 @@ export function useGameLoop(
     ? centsOff(pitchData.frequency, activeNote.targetFrequency)
     : null;
 
-  return { noteStatuses, activeNote, score, stars, hits, isComplete,
+  return { noteStatuses, missLabels, activeNote, score, stars, hits, isComplete,
            elapsedRef, beatMs, leadInMs: leadInMs, centsOffset,
            combo, maxCombo, lastHitAt };
 }
