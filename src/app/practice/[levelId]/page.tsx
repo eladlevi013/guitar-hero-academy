@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
 import PracticeSession from "@/components/PracticeSession";
 
-const ALL_WORLDS = [world1, world2, world3];
+const ALL_WORLDS = [world1];
 
 interface Props {
   params: Promise<{ levelId: string }>;

@@ -4,26 +4,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
 import { useProgress } from "@/hooks/useProgress";
 
-const ALL_WORLDS = [world1, world2, world3];
+const ALL_WORLDS = [world1];
 
 const WORLD_META: Record<string, {
   accent: string; diffLabel: string; diffColor: string; levelColors: string[];
 }> = {
   world1: {
-    accent: "#c8553d", diffLabel: "Beginner", diffColor: "#5c8a42",
+    accent: "#c8553d", diffLabel: "Intermediate", diffColor: "#c47c2a",
     levelColors: ["#c8553d","#c47c2a","#5c8a42","#3a7a6b","#3a5a8a","#7a4a8a"],
-  },
-  world2: {
-    accent: "#3a7a6b", diffLabel: "Hard", diffColor: "#c47c2a",
-    levelColors: ["#3a7a6b","#3a5a8a","#7a4a8a","#c8553d","#8a3a20","#c8553d"],
-  },
-  world3: {
-    accent: "#c8553d", diffLabel: "Extreme", diffColor: "#c8553d",
-    levelColors: ["#c47c2a","#c8553d","#a83a1e","#8a1a1a","#5c1840","#2c0e50"],
   },
 };
 
@@ -179,8 +169,8 @@ export default function Home() {
             color: "rgba(220,196,160,0.65)",
             maxWidth: 460, margin: "0 auto", lineHeight: 1.75,
           }}>
-            Play any note on your guitar. The app listens, detects pitch in real
-            time, and scores only what you hit at the right moment.
+            A real-time scale trainer. Play through the Em pentatonic positions
+            across the neck — the app listens, detects pitch, and scores every note.
           </p>
         </div>
 
@@ -202,6 +192,12 @@ export default function Home() {
               backdropFilter: "blur(6px)", letterSpacing: "-0.01em",
             }}
           >Continue →</button>
+          <Link href="/daily" style={{
+            padding: "16px 38px", borderRadius: 14, fontWeight: 700, fontSize: 16,
+            background: "rgba(240,192,60,0.08)", color: "#f0c040", textDecoration: "none",
+            border: "1.5px solid rgba(240,192,60,0.25)",
+            backdropFilter: "blur(6px)", letterSpacing: "-0.01em",
+          }}>📅 Daily Challenge</Link>
         </div>
 
         {/* Stats strip */}
@@ -210,9 +206,9 @@ export default function Home() {
           marginTop: 8,
         }}>
           {[
-            { n: "3", label: "Worlds" },
-            { n: "18", label: "Levels" },
-            { n: "140", label: "Max BPM" },
+            { n: "5", label: "Positions" },
+            { n: "6", label: "Levels" },
+            { n: "120", label: "Max BPM" },
           ].map(s => (
             <div key={s.label} style={{ textAlign: "center" }}>
               <div style={{
@@ -376,9 +372,9 @@ export default function Home() {
         gap: "clamp(24px, 5vw, 80px)", flexWrap: "wrap",
       }}>
         {[
-          { icon: "🎸", title: "Real-time pitch",      desc: "YIN algorithm, works with acoustic & electric guitar" },
-          { icon: "🎯", title: "Rhythm scoring",       desc: "Only counts if you hit the right note at the right time" },
-          { icon: "🏆", title: "3 worlds · 18 levels", desc: "From beginner open strings to 140 BPM speed runs" },
+          { icon: "🎸", title: "Real-time pitch",          desc: "YIN algorithm, works with acoustic & electric guitar" },
+          { icon: "🎯", title: "Rhythm scoring",           desc: "Only counts if you hit the right note at the right time" },
+          { icon: "🏆", title: "5 pentatonic positions",   desc: "All CAGED shapes of Em pentatonic, 95–120 BPM" },
         ].map(f => (
           <div key={f.title} style={{ textAlign: "center", maxWidth: 200 }}>
             <div style={{ fontSize: 22, marginBottom: 8 }}>{f.icon}</div>

@@ -9,8 +9,8 @@ import world1Level6 from "@/data/levels/world1-level6";
 const world1: World = {
   id: "world1",
   number: 1,
-  title: "The Basics",
-  description: "Learn the fundamentals — open strings, single-string melodies, and your first real riff.",
+  title: "The 5 Positions",
+  description: "All five Em pentatonic positions, full 6-string range each. Same scale from open to fret 12 — five different hand shapes. Finish with the Grand Sweep at 100 BPM.",
   accentColor: "#f5a623",
   levels: [
     world1Level1,

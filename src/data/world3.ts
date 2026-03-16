@@ -9,8 +9,8 @@ import world3Level6 from "@/data/levels/world3-level6";
 const world3: World = {
   id: "world3",
   number: 3,
-  title: "Power & Speed",
-  description: "Full scales, heavy riffs, and high-speed runs — the hardest challenges yet.",
+  title: "Technique Forge",
+  description: "Higher positions, faster tempos, and new scale shapes — this is where real technique is forged.",
   accentColor: "#a83a1e",
   levels: [
     world3Level1,

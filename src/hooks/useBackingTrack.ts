@@ -3,120 +3,87 @@
 import { useRef, useState, useCallback } from "react";
 import { TabNote } from "@/types/tab";
 
-// ── Drum synthesis ─────────────────────────────────────────────────────────────
-
+// ── Kick drum ──────────────────────────────────────────────────────────────────
 function playKick(ctx: AudioContext, dest: AudioNode, t: number) {
   const osc  = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = "sine";
-  osc.frequency.setValueAtTime(150, t);
-  osc.frequency.exponentialRampToValueAtTime(42, t + 0.08);
-  gain.gain.setValueAtTime(0.9, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+  osc.frequency.setValueAtTime(160, t);
+  osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
+  gain.gain.setValueAtTime(1.0, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
   osc.connect(gain); gain.connect(dest);
-  osc.start(t); osc.stop(t + 0.3);
+  osc.start(t); osc.stop(t + 0.4);
 }
 
+// ── Snare ──────────────────────────────────────────────────────────────────────
 function playSnare(ctx: AudioContext, dest: AudioNode, t: number) {
-  const len  = Math.floor(ctx.sampleRate * 0.12);
+  const len  = Math.floor(ctx.sampleRate * 0.15);
   const buf  = ctx.createBuffer(1, len, ctx.sampleRate);
   const data = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 0.8);
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const hpf = ctx.createBiquadFilter();
-  hpf.type = "highpass"; hpf.frequency.value = 2200;
+  hpf.type = "highpass"; hpf.frequency.value = 1800;
   const g = ctx.createGain();
-  g.gain.setValueAtTime(0.5, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+  g.gain.setValueAtTime(0.55, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
   src.connect(hpf); hpf.connect(g); g.connect(dest);
-  src.start(t); src.stop(t + 0.15);
+  src.start(t); src.stop(t + 0.18);
+  // Body tone
   const osc = ctx.createOscillator();
   const og  = ctx.createGain();
-  osc.frequency.value = 190;
-  og.gain.setValueAtTime(0.28, t);
-  og.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  osc.frequency.value = 180;
+  og.gain.setValueAtTime(0.3, t);
+  og.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
   osc.connect(og); og.connect(dest);
-  osc.start(t); osc.stop(t + 0.09);
+  osc.start(t); osc.stop(t + 0.08);
 }
 
-function playHat(ctx: AudioContext, dest: AudioNode, t: number, vol = 0.13) {
-  const len  = Math.floor(ctx.sampleRate * 0.045);
+// ── Hi-hat ─────────────────────────────────────────────────────────────────────
+function playHat(ctx: AudioContext, dest: AudioNode, t: number, vol = 0.18) {
+  const len  = Math.floor(ctx.sampleRate * 0.04);
   const buf  = ctx.createBuffer(1, len, ctx.sampleRate);
   const data = buf.getChannelData(0);
   for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const hpf = ctx.createBiquadFilter();
-  hpf.type = "highpass"; hpf.frequency.value = 9000;
+  hpf.type = "highpass"; hpf.frequency.value = 8000;
   const g = ctx.createGain();
   g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.035);
   src.connect(hpf); hpf.connect(g); g.connect(dest);
-  src.start(t); src.stop(t + 0.05);
+  src.start(t); src.stop(t + 0.045);
 }
 
-// ── Guitar pluck synthesis ─────────────────────────────────────────────────────
-// Sawtooth + subtle square for harmonic richness, low-pass filter swept down
-// to simulate the natural brightness→mellow decay of a plucked string.
-function playPluck(
-  ctx: AudioContext, dest: AudioNode,
-  freq: number, t: number, durBeats: number, beatSec: number
-) {
-  const attackSec  = 0.008;
-  const sustainSec = Math.min(durBeats * beatSec * 0.85, 1.6);
-
-  const osc1 = ctx.createOscillator();
-  const osc2 = ctx.createOscillator();
-  const o2g  = ctx.createGain();
-  const filt = ctx.createBiquadFilter();
-  const gain = ctx.createGain();
-
-  osc1.type = "sawtooth"; osc1.frequency.value = freq;
-  osc2.type = "square";   osc2.frequency.value = freq;
-  o2g.gain.value = 0.08;
-
-  filt.type = "lowpass";
-  filt.frequency.setValueAtTime(3200, t);
-  filt.frequency.exponentialRampToValueAtTime(600, t + attackSec + sustainSec * 0.4);
-  filt.Q.value = 0.7;
-
-  gain.gain.setValueAtTime(0.001, t);
-  gain.gain.linearRampToValueAtTime(0.38, t + attackSec);
-  gain.gain.exponentialRampToValueAtTime(0.12, t + attackSec + sustainSec * 0.35);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + attackSec + sustainSec);
-
-  osc1.connect(filt);
-  osc2.connect(o2g); o2g.connect(filt);
-  filt.connect(gain); gain.connect(dest);
-
-  const end = t + attackSec + sustainSec + 0.02;
-  osc1.start(t); osc1.stop(end);
-  osc2.start(t); osc2.stop(end);
-}
-
-// Warm sub-octave bass for low-register notes
-function playBass(ctx: AudioContext, dest: AudioNode, freq: number, t: number, beatSec: number) {
-  const osc  = ctx.createOscillator();
-  const filt = ctx.createBiquadFilter();
-  const gain = ctx.createGain();
-  osc.type = "sawtooth"; osc.frequency.value = freq / 2;
-  filt.type = "lowpass"; filt.frequency.value = 380; filt.Q.value = 1.2;
-  gain.gain.setValueAtTime(0.001, t);
-  gain.gain.linearRampToValueAtTime(0.28, t + 0.018);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + Math.min(beatSec * 0.9, 1.1));
-  osc.connect(filt); filt.connect(gain); gain.connect(dest);
-  osc.start(t); osc.stop(t + Math.min(beatSec * 0.95, 1.2));
+// ── Crash — marks the first note ──────────────────────────────────────────────
+function playCrash(ctx: AudioContext, dest: AudioNode, t: number) {
+  const len  = Math.floor(ctx.sampleRate * 1.0);
+  const buf  = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 0.35);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const hpf = ctx.createBiquadFilter();
+  hpf.type = "highpass"; hpf.frequency.value = 4000;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.28, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.95);
+  src.connect(hpf); hpf.connect(g); g.connect(dest);
+  src.start(t); src.stop(t + 1.0);
 }
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useBackingTrack() {
-  const ctxRef    = useRef<AudioContext | null>(null);
-  const timerRef  = useRef<number | null>(null);
-  const masterRef = useRef<GainNode | null>(null);
+  const ctxRef            = useRef<AudioContext | null>(null);
+  const timerRef          = useRef<number | null>(null);
+  const masterRef         = useRef<GainNode | null>(null);
+  const audioWallStartRef = useRef<number | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolState]     = useState(0.55);
+  const [volume, setVolState]     = useState(0.7);
 
   const stop = useCallback(() => {
     if (timerRef.current !== null) {
@@ -130,46 +97,90 @@ export function useBackingTrack() {
   }, []);
 
   /**
-   * Start the backing track.
+   * Start the drum backing track.
    *
-   * @param bpm      Beats per minute of the level
-   * @param notes    The level's note array — each note is synthesised as a guitar
-   *                 pluck and fires at the EXACT same audio time it crosses the hit
-   *                 line on screen, giving perfect music-tab synchronisation.
-   * @param leadInMs Lead-in period in ms (drums-only count-in before beat 0).
+   * Drums only — no bass, no pad, no guide melody.  Clean and clear so the
+   * player's own guitar is the only pitched sound they hear.
+   *
+   * The kick fires on every note's exact start beat so the drum literally says
+   * "play this note NOW."  The snare provides backbeat groove on bar-beat 3.
+   *
+   * Timing: audioWallStartRef is shifted forward by the audio output latency so
+   * the game's visual playhead lines up with when the player HEARS the kick,
+   * not when it was scheduled.
    */
-  const start = useCallback((bpm: number, notes: TabNote[], leadInMs: number) => {
+  const start = useCallback((bpm: number, notes: TabNote[], leadInMs: number, userLatencyOffsetMs = 100) => {
     stop();
 
-    const ctx    = new AudioContext();
+    const ctx = new AudioContext();
     ctxRef.current = ctx;
+
+    // Shift the game-clock reference by output latency so the note hits the
+    // visual playhead exactly when the player HEARS the kick drum.
+    //
+    // browser.outputLatency is unreliable (often 0 on Windows Chrome/Edge).
+    // userLatencyOffsetMs is a user-adjustable correction — default 100ms
+    // covers the typical Windows Chrome case where outputLatency = 0 but
+    // real hardware latency is 80–200 ms.
+    const rawLatency = (ctx as AudioContext & { outputLatency?: number }).outputLatency
+                    ?? ctx.baseLatency
+                    ?? 0;
+    const detectedMs = Math.max(0, rawLatency * 1000);
+    audioWallStartRef.current = performance.now() + detectedMs + userLatencyOffsetMs;
 
     const master = ctx.createGain();
     master.gain.value = volume;
     master.connect(ctx.destination);
     masterRef.current = master;
 
-    const beatSec   = 60 / bpm;
-    const leadInSec = leadInMs / 1000;
-    const now       = ctx.currentTime;
+    const beatSec     = 60 / bpm;
+    const leadInSec   = leadInMs / 1000;
+    const leadInBeats = Math.round(leadInSec / beatSec); // = LEAD_IN_BEATS (4)
+    const now         = ctx.currentTime;
 
     const lastNote   = notes.length > 0 ? notes[notes.length - 1] : null;
-    const songBeats  = lastNote ? lastNote.startBeat + lastNote.durationBeats + 2 : 8;
-    const totalBeats = Math.ceil(leadInSec / beatSec) + songBeats + 2;
+    const songBeats  = lastNote ? lastNote.startBeat + lastNote.durationBeats + 4 : 8;
+    const totalBeats = leadInBeats + songBeats;
+
+    // Set of song-beat positions where notes start
+    const noteStartBeats = new Set(notes.map(n => n.startBeat));
 
     // ── Drums ─────────────────────────────────────────────────────────────────
+    // Count-in: steady kick every 4 beats, snare on beat 3, hat every beat.
+    // Song:     kick on every note's start beat, snare on bar-beat 3, hat every beat.
     for (let b = 0; b < totalBeats; b++) {
-      const t   = now + b * beatSec;
-      const mod = b % 4;
-      if (mod === 0) playKick(ctx, master, t);
-      if (mod === 2) playSnare(ctx, master, t);
+      const t        = now + b * beatSec;
+      const songBeat = b - leadInBeats; // negative = count-in
+
+      const isNotebeat = songBeat >= 0 && noteStartBeats.has(songBeat);
+      const isCountIn  = songBeat < 0;
+
+      // Kick
+      if (isNotebeat || (isCountIn && b % 4 === 0)) {
+        playKick(ctx, master, t);
+      }
+
+      // Snare: bar beat 3 (backbeat)
+      if (b % 4 === 2) {
+        playSnare(ctx, master, t);
+      }
+
+      // Hi-hat on every beat
       playHat(ctx, master, t);
+
       // Lighter off-beat hi-hat
-      if (b < totalBeats - 1) playHat(ctx, master, t + beatSec * 0.5, 0.07);
+      if (b < totalBeats - 1) {
+        playHat(ctx, master, t + beatSec * 0.5, 0.09);
+      }
+    }
+
+    // Crash on the first note (song downbeat)
+    if (notes.length > 0) {
+      playCrash(ctx, master, now + leadInSec);
     }
 
     setIsPlaying(true);
-    const totalMs = (totalBeats * beatSec + 1.5) * 1000;
+    const totalMs = (totalBeats * beatSec + 2) * 1000;
     timerRef.current = window.setTimeout(() => stop(), totalMs);
   }, [volume, stop]); // eslint-disable-line
 
@@ -178,5 +189,5 @@ export function useBackingTrack() {
     if (masterRef.current) masterRef.current.gain.value = v;
   }, []);
 
-  return { isPlaying, start, stop, volume, setVolume };
+  return { isPlaying, start, stop, volume, setVolume, audioWallStartRef };
 }

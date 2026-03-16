@@ -7,7 +7,7 @@ import { PitchState } from "@/hooks/usePitchDetection";
 // ── Timing constants ──────────────────────────────────────────────────────────
 const CENTS_THRESHOLD  = 75;   // ±75¢ = close enough to count as a hit
 const LEAD_IN_BEATS    = 4;    // exactly 4 drum beats before note-0 hits the playhead
-const HIT_PADDING_MS   = 150;  // extra grace ms added before/after each note window
+const HIT_PADDING_MS   = 600;  // generous window: covers output latency + mic buffer + pitch detection + reaction time
 
 function centsOff(detected: number, target: number) {
   return 1200 * Math.log2(detected / target);
@@ -34,10 +34,13 @@ export interface GameLoopReturn {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 export function useGameLoop(
-  level     : Level,
-  pitchData : PitchState,
+  level             : Level,
+  pitchData         : PitchState,
+  audioWallStartRef : React.MutableRefObject<number | null>,
+  bpmMultiplier     : number = 1,
+  mode              : "timed" | "practice" = "timed",
 ): GameLoopReturn {
-  const beatMs   = 60000 / level.bpm;
+  const beatMs   = 60000 / (level.bpm * bpmMultiplier);
   const leadInMs = LEAD_IN_BEATS * beatMs; // always an exact whole number of beats
 
   // ── Refs — updated every rAF frame, never trigger re-renders ─────────────
@@ -51,6 +54,7 @@ export function useGameLoop(
   const comboRef          = useRef(0);
   const maxComboRef       = useRef(0);
   const lastHitAt         = useRef(0);  // rAF timestamp, read by TabRail for flash
+  const practiceIdxRef    = useRef(0);  // current note index in practice mode
 
   // ── React state — updated only on meaningful events ───────────────────────
   const [noteStatuses, setNoteStatuses] = useState<Map<string, NoteStatus>>(new Map());
@@ -74,6 +78,7 @@ export function useGameLoop(
     comboRef.current          = 0;
     maxComboRef.current       = 0;
     lastHitAt.current         = 0;
+    practiceIdxRef.current    = 0;
     setNoteStatuses(new Map(fresh));
     setHits(0);
     setCombo(0);
@@ -88,7 +93,7 @@ export function useGameLoop(
     // Fresh reset at start of each listening session
     const fresh = new Map(level.notes.map(n => [n.id, "pending" as NoteStatus]));
     statusesRef.current       = fresh;
-    startTimeRef.current      = null;
+    startTimeRef.current      = null; // set on first rAF tick from audioWallStartRef
     elapsedRef.current        = 0;
     requireReleaseRef.current = false;
     lastHitFreqRef.current    = null;
@@ -96,6 +101,7 @@ export function useGameLoop(
     comboRef.current          = 0;
     maxComboRef.current       = 0;
     lastHitAt.current         = 0;
+    practiceIdxRef.current    = 0;
     setNoteStatuses(new Map(fresh));
     setHits(0);
     setCombo(0);
@@ -107,7 +113,73 @@ export function useGameLoop(
     function tick(ts: number) {
       if (cancelled) return;
 
-      if (startTimeRef.current === null) startTimeRef.current = ts;
+      // ── Practice mode — note-index driven, no misses, smooth tab scroll ──
+      if (mode === "practice") {
+        // Release detector
+        if (requireReleaseRef.current) {
+          const f = pitchFreqRef.current;
+          if (!f) {
+            requireReleaseRef.current = false;
+          } else if (lastHitFreqRef.current && Math.abs(centsOff(f, lastHitFreqRef.current)) > 150) {
+            requireReleaseRef.current = false;
+          }
+        }
+
+        const idx   = practiceIdxRef.current;
+        const notes = level.notes;
+
+        if (idx >= notes.length) { setIsComplete(true); return; }
+
+        const targetNote    = notes[idx];
+        const targetElapsed = targetNote.startBeat * beatMs + leadInMs;
+
+        // Lerp elapsedRef toward the current note's position for smooth scroll
+        const cur  = elapsedRef.current;
+        const diff = targetElapsed - cur;
+        elapsedRef.current = Math.abs(diff) < 1 ? targetElapsed : cur + diff * 0.10;
+
+        let changed = false;
+
+        // Ensure current note is marked active
+        if (statusesRef.current.get(targetNote.id) === "pending") {
+          statusesRef.current.set(targetNote.id, "active");
+          changed = true;
+        }
+
+        // Check pitch match
+        const freq = pitchFreqRef.current;
+        if (freq && !requireReleaseRef.current) {
+          const cents = centsOff(freq, targetNote.targetFrequency);
+          if (Math.abs(cents) <= CENTS_THRESHOLD) {
+            statusesRef.current.set(targetNote.id, "hit");
+            requireReleaseRef.current = true;
+            lastHitFreqRef.current    = targetNote.targetFrequency;
+            hitsRef.current++;
+            comboRef.current++;
+            if (comboRef.current > maxComboRef.current) maxComboRef.current = comboRef.current;
+            lastHitAt.current = ts;
+            practiceIdxRef.current++;
+            changed = true;
+          }
+        }
+
+        if (changed) {
+          setNoteStatuses(new Map(statusesRef.current));
+          setHits(hitsRef.current);
+          setCombo(comboRef.current);
+          setMaxCombo(maxComboRef.current);
+        }
+
+        if (practiceIdxRef.current >= notes.length) { setIsComplete(true); return; }
+        requestAnimationFrame(tick);
+        return;
+      }
+
+      // ── Timed mode — clock-driven, notes can be missed ───────────────────
+      // Sync to audio clock on first tick — eliminates game/audio drift
+      if (startTimeRef.current === null) {
+        startTimeRef.current = audioWallStartRef.current ?? ts;
+      }
       const elapsed = ts - startTimeRef.current;
       elapsedRef.current = elapsed;
 
@@ -202,7 +274,7 @@ export function useGameLoop(
 
     const rafId = requestAnimationFrame(tick);
     return () => { cancelled = true; cancelAnimationFrame(rafId); };
-  }, [pitchData.isListening, level.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pitchData.isListening, level.id, bpmMultiplier, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ────────────────────────────────────────────────────────
   const total   = level.notes.length;

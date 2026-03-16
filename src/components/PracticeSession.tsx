@@ -8,6 +8,7 @@ import { useBackingTrack } from "@/hooks/useBackingTrack";
 import { useProgress } from "@/hooks/useProgress";
 import TabRail from "@/components/TabRail";
 import { Level } from "@/types/tab";
+import { useAchievements } from "@/hooks/useAchievements";
 
 const IN_TUNE_CENTS = 15;
 const CLOSE_CENTS   = 40;
@@ -313,11 +314,20 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const pitchData = usePitchDetection();
   const { note, volume, isListening, error, start, stop } = pitchData;
   const backing = useBackingTrack();
-  const [isStarting, setIsStarting] = useState(false);
+  const { unlock, newest, dismissNewest } = useAchievements();
+  const [isStarting,       setIsStarting]       = useState(false);
+  const [speedMultiplier,  setSpeedMultiplier]  = useState<0.5 | 0.75 | 1 | 1.25 | 1.5>(1);
+  const [isPractice,       setIsPractice]       = useState(false);
+  // userSyncMs compensates for browser outputLatency being unreliable (esp. Windows Chrome).
+  // Default 100 ms covers the typical case where outputLatency reports 0 but real latency is ~100–150 ms.
+  // If the kick sounds AFTER the note reaches the marker → increase. If before → decrease.
+  const [userSyncMs,       setUserSyncMs]       = useState(100);
 
   const { noteStatuses, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
-          combo, maxCombo, lastHitAt } = useGameLoop(level, pitchData);
+          combo, maxCombo, lastHitAt } = useGameLoop(
+    level, pitchData, backing.audioWallStartRef, speedMultiplier, isPractice ? "practice" : "timed",
+  );
 
   const total   = level.notes.length;
   const played  = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;
@@ -342,10 +352,29 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     if (isComplete && backing.isPlaying) backing.stop();
   }, [isComplete]); // eslint-disable-line
   useEffect(() => {
-    if (isListening && !backing.isPlaying) backing.start(level.bpm, level.notes, leadInMs);
+    if (isListening && !backing.isPlaying) backing.start(level.bpm * speedMultiplier, level.notes, leadInMs, userSyncMs);
     if (!isListening && backing.isPlaying) backing.stop();
   }, [isListening]); // eslint-disable-line
   useEffect(() => () => { backing.stop(); }, []); // eslint-disable-line
+
+  // Achievement: first note
+  useEffect(() => {
+    if (hits === 1) unlock("first-note");
+  }, [hits, unlock]);
+
+  // Achievement: combo milestones
+  useEffect(() => {
+    if (combo >= 5)  unlock("on-a-roll");
+    if (combo >= 10) unlock("unstoppable");
+  }, [combo, unlock]);
+
+  // Achievement: on level complete
+  useEffect(() => {
+    if (!isComplete) return;
+    unlock("first-level");
+    if (stars === 3) unlock("hat-trick");
+    if (hits === level.notes.length) unlock("perfect");
+  }, [isComplete, stars, hits, level.notes.length, unlock]);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -363,10 +392,50 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     return () => window.removeEventListener("keydown", handler);
   }, [isListening, isStarting, start, stop, onRestart]); // eslint-disable-line
 
-  if (isComplete) {
+  if (isComplete && !isPractice) {
     return (
       <LevelComplete level={level} levelNum={levelNum} hits={hits} total={total}
         stars={stars} maxCombo={maxCombo} accent={accent} onRestart={onRestart} nextLevelId={nextLevelId} />
+    );
+  }
+
+  if (isComplete && isPractice) {
+    return (
+      <div style={{
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: "linear-gradient(160deg, #04020f 0%, #0b0420 22%, #16082e 44%, #1e0818 66%, #0d0410 100%)",
+        padding: 24,
+      }}>
+        <div style={{
+          background: "rgba(10,5,28,0.97)", borderRadius: 28,
+          border: `1px solid ${accent}30`, padding: "44px 34px", textAlign: "center",
+          maxWidth: 380, width: "100%",
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 18,
+        }}>
+          <div style={{ fontSize: 48 }}>🎸</div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.2em", marginBottom: 6 }}>PRACTICE COMPLETE</div>
+            <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#f0e8d8" }}>Nice work!</h2>
+            <p style={{ fontSize: 13, color: "rgba(200,180,140,0.55)", marginTop: 8, marginBottom: 0 }}>
+              You played through all {total} notes.
+            </p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+            <button onClick={onRestart} style={{
+              padding: "14px", borderRadius: 14, fontWeight: 800, fontSize: 15, cursor: "pointer",
+              background: `linear-gradient(135deg, ${accent}dd, ${accent}99)`,
+              color: "white", border: "none",
+              boxShadow: `0 4px 0 ${accent}55, 0 8px 24px ${accent}44`,
+            }}>Practice Again</button>
+            <Link href="/practice" style={{
+              padding: "13px", borderRadius: 14, fontWeight: 600, fontSize: 15,
+              textDecoration: "none", textAlign: "center",
+              background: "rgba(255,255,255,0.07)", color: "#f0e8d8",
+              border: "1.5px solid rgba(255,255,255,0.12)", display: "block",
+            }}>World Map</Link>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -478,11 +547,18 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                   {note?.name ?? "—"}
                 </div>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(200,180,140,0.45)", letterSpacing: "0.12em", marginBottom: 2 }}>SCORE</div>
-                <div style={{ fontSize: 26, fontWeight: 900, color: accent, lineHeight: 1, textShadow: `0 0 16px ${accent}66` }}>{score}%</div>
-                <Stars count={stars} accent={accent} />
-              </div>
+              {isPractice ? (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(200,180,140,0.45)", letterSpacing: "0.12em", marginBottom: 4 }}>PRACTICE</div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: accent, lineHeight: 1 }}>{hits}/{total}</div>
+                </div>
+              ) : (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(200,180,140,0.45)", letterSpacing: "0.12em", marginBottom: 2 }}>SCORE</div>
+                  <div style={{ fontSize: 26, fontWeight: 900, color: accent, lineHeight: 1, textShadow: `0 0 16px ${accent}66` }}>{score}%</div>
+                  <Stars count={stars} accent={accent} />
+                </div>
+              )}
             </div>
           </div>
 
@@ -518,84 +594,199 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
             <CentsBar cents={centsOffset} />
           </div>
 
-          {/* Controls */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "rgba(200,180,140,0.45)" }}>
-              <span>mic</span>
-              <div style={{ width: 52, height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ width: `${volPct}%`, height: "100%", background: "#7ac85a", transition: "width .05s", boxShadow: "0 0 6px rgba(122,200,90,0.6)" }} />
-              </div>
-            </div>
+          {/* ── Control Dock ───────────────────────────────────────────────────── */}
+          <div style={{
+            background: "rgba(10,5,28,0.92)",
+            borderRadius: 20,
+            border: `1px solid ${accent}20`,
+            overflow: "hidden",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+          }}>
 
-            {backing.isPlaying && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "rgba(200,180,140,0.45)" }}>
-                <span>track</span>
-                <input type="range" min={0} max={1} step={0.05}
-                  value={backing.volume}
-                  onChange={e => backing.setVolume(parseFloat(e.target.value))}
-                  style={{ width: 56, accentColor: accent, cursor: "pointer" }}
-                />
+            {/* Settings panel — shown only when not playing */}
+            {!isListening && (
+              <div style={{
+                padding: "16px 20px",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                display: "flex", flexDirection: "column", gap: 14,
+              }}>
+
+                {/* SYNC row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>SYNC</span>
+                  <input
+                    type="range" min={0} max={250} step={10}
+                    value={userSyncMs}
+                    onChange={e => setUserSyncMs(Number(e.target.value))}
+                    style={{ flex: 1, accentColor: accent, cursor: "pointer" }}
+                  />
+                  <span style={{ fontSize: 12, fontWeight: 800, color: accent, minWidth: 44, textAlign: "right", flexShrink: 0 }}>
+                    {userSyncMs}ms
+                  </span>
+                  <span style={{ fontSize: 10, color: "rgba(200,180,140,0.28)", flexShrink: 0 }}>
+                    ↑ if kick sounds after marker
+                  </span>
+                </div>
+
+                {/* SPEED row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>SPEED</span>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    {([0.5, 0.75, 1, 1.25, 1.5] as const).map(s => (
+                      <button key={s} onClick={() => setSpeedMultiplier(s)} style={{
+                        padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", transition: "all .12s",
+                        background: speedMultiplier === s ? accent : "rgba(255,255,255,0.07)",
+                        color: speedMultiplier === s ? "white" : "rgba(200,180,140,0.45)",
+                        border: `1px solid ${speedMultiplier === s ? accent : "rgba(255,255,255,0.1)"}`,
+                        boxShadow: speedMultiplier === s ? `0 0 12px ${accent}55` : "none",
+                      }}>{s === 1 ? "1×" : `${s}×`}</button>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(200,180,140,0.5)", marginLeft: 4 }}>
+                    {Math.round(level.bpm * speedMultiplier)} BPM
+                  </span>
+                </div>
+
+                {/* MODE row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.4)", letterSpacing: "0.15em", minWidth: 52, flexShrink: 0 }}>MODE</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {(["timed", "practice"] as const).map(m => (
+                      <button key={m} onClick={() => setIsPractice(m === "practice")} style={{
+                        padding: "5px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", transition: "all .12s",
+                        background: (m === "practice") === isPractice ? accent : "rgba(255,255,255,0.07)",
+                        color: (m === "practice") === isPractice ? "white" : "rgba(200,180,140,0.45)",
+                        border: `1px solid ${(m === "practice") === isPractice ? accent : "rgba(255,255,255,0.1)"}`,
+                        boxShadow: (m === "practice") === isPractice ? `0 0 12px ${accent}55` : "none",
+                      }}>{m === "timed" ? "Timed" : "Practice"}</button>
+                    ))}
+                  </div>
+                  {isPractice && (
+                    <span style={{ fontSize: 10, color: "rgba(200,180,140,0.28)" }}>no score · play at your own pace</span>
+                  )}
+                </div>
               </div>
             )}
 
-            {error && <p style={{ fontSize: 12, color: "#e8553d", margin: 0 }}>{error}</p>}
+            {/* Transport row — always visible */}
+            <div style={{ padding: "12px 20px", display: "flex", alignItems: "center", gap: 14 }}>
 
-            <button
-              onClick={() => {
-                if (isListening) { stop(); }
-                else if (!isStarting) { setIsStarting(true); start(); }
-              }}
-              disabled={isStarting}
-              style={{
-                padding: "13px 28px", borderRadius: 12, fontWeight: 800, fontSize: 15,
-                cursor: isStarting ? "default" : "pointer", transition: "all .15s",
-                opacity: isStarting ? 0.65 : 1,
-                ...(isListening
-                  ? { background: "rgba(255,255,255,0.08)", color: "#f0e8d8", border: "1px solid rgba(255,255,255,0.12)" }
-                  : { background: `linear-gradient(135deg, ${accent}dd, ${accent}99)`, color: "white", border: "none", boxShadow: `0 4px 0 ${accent}55, 0 8px 24px ${accent}44` }),
-              }}
-            >
-              {isListening ? "Stop" : isStarting ? "Requesting…" : "Start Mic"}
-            </button>
+              {/* Mic level */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(200,180,140,0.38)", letterSpacing: "0.1em" }}>MIC</span>
+                <div style={{ width: 52, height: 5, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
+                  <div style={{
+                    width: `${volPct}%`, height: "100%", borderRadius: 3,
+                    background: isListening ? "#7ac85a" : "rgba(200,180,140,0.2)",
+                    transition: "width .05s, background .3s",
+                    boxShadow: isListening ? "0 0 6px rgba(122,200,90,0.5)" : "none",
+                  }} />
+                </div>
+              </div>
+
+              {/* Drum volume — always shown */}
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(200,180,140,0.38)", letterSpacing: "0.1em" }}>DRUMS</span>
+                <input type="range" min={0} max={1} step={0.05}
+                  value={backing.volume}
+                  onChange={e => backing.setVolume(parseFloat(e.target.value))}
+                  style={{ width: 60, accentColor: accent, cursor: "pointer" }}
+                />
+              </div>
+
+              <div style={{ flex: 1 }} />
+
+              {error && <span style={{ fontSize: 11, color: "#e8553d", flexShrink: 0 }}>{error}</span>}
+
+              {/* Start / Stop */}
+              <button
+                onClick={() => {
+                  if (isListening) { stop(); }
+                  else if (!isStarting) { setIsStarting(true); start(); }
+                }}
+                disabled={isStarting}
+                style={{
+                  padding: "11px 26px", borderRadius: 12, fontWeight: 800, fontSize: 14,
+                  cursor: isStarting ? "default" : "pointer", transition: "all .15s",
+                  opacity: isStarting ? 0.6 : 1, letterSpacing: "0.04em", flexShrink: 0,
+                  ...(isListening
+                    ? { background: "rgba(232,85,61,0.12)", color: "#e8553d", border: "1.5px solid rgba(232,85,61,0.28)" }
+                    : { background: `linear-gradient(135deg, ${accent}dd, ${accent}99)`, color: "white", border: "none", boxShadow: `0 4px 0 ${accent}55, 0 6px 20px ${accent}44` }),
+                }}
+              >
+                {isListening ? "◼  Stop" : isStarting ? "…" : "▶  Start"}
+              </button>
+            </div>
+
+            {/* Live stats bar — shown when playing */}
+            {isListening && (
+              <div style={{
+                padding: "8px 20px 12px",
+                borderTop: "1px solid rgba(255,255,255,0.05)",
+                display: "flex", gap: 12, justifyContent: "center", alignItems: "center",
+                fontSize: 12, color: "rgba(200,180,140,0.45)", fontWeight: 600, flexWrap: "wrap",
+              }}>
+                <span style={{ color: "#7ac85a" }}>✓ {hits}</span>
+                <span style={{ opacity: 0.3 }}>·</span>
+                <span style={{ color: "#e8553d" }}>✗ {played - hits}</span>
+                <span style={{ opacity: 0.3 }}>·</span>
+                <span>{total - played} left</span>
+                {maxCombo >= 3 && (
+                  <><span style={{ opacity: 0.3 }}>·</span><span style={{ color: "#e8a840" }}>🔥 ×{maxCombo}</span></>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Live stats */}
-          {isListening && (
-            <div style={{
-              display: "flex", gap: 14, justifyContent: "center", fontSize: 12,
-              color: "rgba(200,180,140,0.45)", fontWeight: 600, flexWrap: "wrap",
-            }}>
-              <span style={{ color: "#7ac85a" }}>✓ {hits} hit</span>
-              <span>·</span>
-              <span style={{ color: "#e8553d" }}>✗ {played - hits} missed</span>
-              <span>·</span>
-              <span>{total - played} remaining</span>
-              {maxCombo >= 3 && <><span>·</span><span style={{ color: "#e8a840" }}>best ×{maxCombo}</span></>}
+          {/* Keyboard hints — only when not playing */}
+          {!isListening && (
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", paddingBottom: 8 }}>
+              {[
+                { key: "Space", label: "Start / Stop" },
+                { key: "R",     label: "Restart" },
+                { key: "Esc",   label: "Map" },
+              ].map(({ key, label }) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.18)" }}>
+                  <kbd style={{
+                    background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 4, padding: "1px 5px", fontSize: 9, fontFamily: "monospace",
+                    color: "rgba(255,255,255,0.22)",
+                  }}>{key}</kbd>
+                  <span>{label}</span>
+                </div>
+              ))}
             </div>
           )}
-
-          {/* Keyboard shortcut hints */}
-          <div style={{
-            display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap",
-            paddingBottom: 8,
-          }}>
-            {[
-              { key: "Space", label: isListening ? "Stop" : "Start" },
-              { key: "R",     label: "Restart" },
-              { key: "Esc",   label: "Map" },
-            ].map(({ key, label }) => (
-              <div key={key} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "rgba(255,255,255,0.2)" }}>
-                <kbd style={{
-                  background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 5, padding: "1px 6px", fontSize: 10, fontFamily: "monospace",
-                  color: "rgba(255,255,255,0.3)",
-                }}>{key}</kbd>
-                <span>{label}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
+
+      {/* Achievement toast */}
+      {newest && (
+        <div
+          onClick={dismissNewest}
+          style={{
+            position: "fixed", bottom: 80, left: "50%", transform: "translateX(-50%)",
+            background: "rgba(10,5,28,0.97)", backdropFilter: "blur(16px)",
+            border: "1px solid rgba(240,192,60,0.4)",
+            borderRadius: 20, padding: "12px 20px",
+            display: "flex", alignItems: "center", gap: 12,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(240,192,60,0.15)",
+            zIndex: 200, cursor: "pointer", maxWidth: 320,
+            animation: "comboAppear 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+          }}
+        >
+          <span style={{ fontSize: 28 }}>{newest.icon}</span>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, color: "#f0c040", letterSpacing: "0.18em", marginBottom: 2 }}>
+              ACHIEVEMENT UNLOCKED
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#f0e8d8" }}>{newest.title}</div>
+            <div style={{ fontSize: 11, color: "rgba(200,180,140,0.6)", marginTop: 1 }}>{newest.description}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
