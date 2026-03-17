@@ -1,15 +1,16 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
-import { useGameLoop } from "@/hooks/useGameLoop";
+import { NoteStatus, useGameLoop } from "@/hooks/useGameLoop";
 import { useBackingTrack } from "@/hooks/useBackingTrack";
 import { useProgress } from "@/hooks/useProgress";
 import TabRail from "@/components/TabRail";
 import { Level } from "@/types/tab";
 import { useAchievements } from "@/hooks/useAchievements";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
+import { useSessionHistory } from "@/hooks/useSessionHistory";
 
 const IN_TUNE_CENTS = 15;
 const CLOSE_CENTS   = 40;
@@ -24,6 +25,118 @@ function noteNameFromFreq(f: number) {
   const midi = 12 * Math.log2(f / 440) + 69;
   const r    = Math.round(midi);
   return NOTE_NAMES[((r % 12) + 12) % 12] + (Math.floor(r / 12) - 1);
+}
+
+type SessionFeedback = {
+  focusArea: string;
+  tips: string[];
+  topMissedNotes: string[];
+};
+
+type PracticeSegment = "full" | "frontHalf" | "backHalf" | "finalStretch";
+
+const SEGMENT_OPTIONS: Array<{ id: PracticeSegment; label: string; short: string }> = [
+  { id: "full", label: "Full level", short: "Full" },
+  { id: "frontHalf", label: "Front half", short: "Front" },
+  { id: "backHalf", label: "Back half", short: "Back" },
+  { id: "finalStretch", label: "Last 8 notes", short: "Last 8" },
+];
+
+function buildSegmentLevel(level: Level, segment: PracticeSegment) {
+  const totalNotes = level.notes.length;
+
+  let picked = level.notes;
+  let label = "Full level";
+
+  if (segment === "frontHalf") {
+    picked = level.notes.slice(0, Math.max(1, Math.ceil(totalNotes / 2)));
+    label = "Front half";
+  } else if (segment === "backHalf") {
+    picked = level.notes.slice(Math.max(0, Math.floor(totalNotes / 2)));
+    label = "Back half";
+  } else if (segment === "finalStretch") {
+    picked = level.notes.slice(Math.max(0, totalNotes - 8));
+    label = "Last 8 notes";
+  }
+
+  const firstBeat = picked[0]?.startBeat ?? 0;
+  const notes = picked.map((note) => ({
+    ...note,
+    startBeat: Math.max(0, note.startBeat - firstBeat),
+  }));
+
+  return {
+    isFull: segment === "full",
+    label,
+    level: {
+      ...level,
+      id: segment === "full" ? level.id : `${level.id}__${segment}`,
+      title: segment === "full" ? level.title : `${level.title} · ${label}`,
+      notes,
+    },
+  };
+}
+
+function buildSessionFeedback(
+  level: Level,
+  noteStatuses: ReadonlyMap<string, NoteStatus>,
+  missLabels: ReadonlyMap<string, string>,
+  hits: number,
+  maxCombo: number,
+): SessionFeedback {
+  const total = level.notes.length;
+  const missedNotes = level.notes.filter((note) => noteStatuses.get(note.id) === "missed");
+  const missCounts = new Map<string, number>();
+  const stringMissCounts = new Map<number, number>();
+
+  missedNotes.forEach((note) => {
+    const missLabel = missLabels.get(note.id);
+    if (missLabel && missLabel !== "silent") {
+      missCounts.set(missLabel, (missCounts.get(missLabel) ?? 0) + 1);
+    }
+    stringMissCounts.set(note.string, (stringMissCounts.get(note.string) ?? 0) + 1);
+  });
+
+  const topMissedNotes = [...missCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([note]) => note);
+
+  const topMissedString = [...stringMissCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const accuracy = total > 0 ? hits / total : 0;
+
+  const tips: string[] = [];
+  if (accuracy < 0.6) {
+    tips.push("Drop the speed and reconnect the line cleanly before pushing tempo.");
+  } else if (accuracy < 0.85) {
+    tips.push("Stay at this tempo until the phrase feels connected for longer stretches.");
+  } else {
+    tips.push("The line is stable now, so the next win is keeping the same touch at a higher speed.");
+  }
+
+  if (topMissedString !== null) {
+    tips.push(`Watch your picking path on string ${topMissedString}; that is where most misses showed up.`);
+  } else if (topMissedNotes[0]) {
+    tips.push(`Give ${topMissedNotes[0]} one extra listening pass before you play it.`);
+  }
+
+  if (maxCombo < Math.max(4, Math.floor(total / 3))) {
+    tips.push("Aim for one calmer, longer combo instead of forcing every note with the same attack.");
+  } else if (level.focus) {
+    tips.push(`Technique goal: ${level.focus}.`);
+  }
+
+  const focusArea = topMissedString !== null
+    ? `String ${topMissedString} accuracy`
+    : topMissedNotes[0]
+      ? `Pitch lock on ${topMissedNotes[0]}`
+      : level.focus ?? "General note accuracy";
+
+  return {
+    focusArea,
+    tips: tips.slice(0, 3),
+    topMissedNotes,
+  };
 }
 
 // ── Cents bar ─────────────────────────────────────────────────────────────────
@@ -307,6 +420,232 @@ function LevelComplete({ level, levelNum, hits, total, stars, maxCombo, accent, 
 }
 
 // ── Onboarding Modal ──────────────────────────────────────────────────────────
+function SessionCompletePanel({
+  level,
+  levelNum,
+  completionLabel,
+  segmentLabel,
+  isFullLevel,
+  hits,
+  total,
+  stars,
+  maxCombo,
+  accent,
+  feedback,
+  onRestart,
+  onRetrySlower,
+  onSwitchToPractice,
+  nextLevelId,
+}: {
+  level: Level;
+  levelNum: number;
+  completionLabel: string;
+  segmentLabel: string;
+  isFullLevel: boolean;
+  hits: number;
+  total: number;
+  stars: 0 | 1 | 2 | 3;
+  maxCombo: number;
+  accent: string;
+  feedback: SessionFeedback;
+  onRestart: () => void;
+  onRetrySlower: () => void;
+  onSwitchToPractice: () => void;
+  nextLevelId?: string;
+}) {
+  const pct = Math.round(hits / total * 100);
+  const message = stars === 3 ? "Flawless run!" : stars === 2 ? "Great job!" : stars === 1 ? "Keep going!" : "Try again!";
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(160deg, #04020f 0%, #0b0420 22%, #16082e 44%, #1e0818 66%, #0d0410 100%)",
+        padding: 24,
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {stars === 3 && <Confetti />}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: "-10%", left: "-8%", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${accent}22 0%, transparent 65%)` }} />
+        <div style={{ position: "absolute", bottom: "-10%", right: "-8%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,40,180,0.18) 0%, transparent 65%)" }} />
+      </div>
+
+      <div
+        style={{
+          background: "rgba(10,5,28,0.97)",
+          borderRadius: 28,
+          border: `1px solid ${accent}30`,
+          boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px ${accent}18`,
+          padding: "44px 34px",
+          textAlign: "center",
+          maxWidth: 470,
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 18,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.2em", marginBottom: 6 }}>
+            {completionLabel}
+          </div>
+          <h2 style={{ fontSize: 28, fontWeight: 900, margin: 0, color: "#f0e8d8" }}>{message}</h2>
+          {!isFullLevel && (
+            <div style={{ fontSize: 12, color: "rgba(240,232,216,0.58)", marginTop: 8 }}>
+              Segment practiced: {segmentLabel}
+            </div>
+          )}
+        </div>
+
+        <Stars count={stars} accent={accent} animate />
+
+        <div style={{ width: "100%", background: "rgba(255,255,255,0.07)", borderRadius: 10, overflow: "hidden", height: 8 }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${pct}%`,
+              background: `linear-gradient(90deg, ${accent}, #7ac85a)`,
+              borderRadius: 10,
+              transition: "width 1.2s ease-out",
+              boxShadow: `0 0 12px ${accent}66`,
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 20, fontSize: 14, color: "rgba(200,180,140,0.6)", fontWeight: 600, flexWrap: "wrap", justifyContent: "center" }}>
+          <span style={{ color: "#7ac85a" }}>Hit {hits}</span>
+          <span style={{ color: "#e8553d" }}>Missed {total - hits}</span>
+          <span style={{ color: accent }}>{pct}%</span>
+          {maxCombo >= 3 && <span style={{ color: "#e8a840" }}>Best combo x{maxCombo}</span>}
+        </div>
+
+        <div
+          style={{
+            width: "100%",
+            borderRadius: 18,
+            padding: "16px 16px 14px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            textAlign: "left",
+          }}
+        >
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: accent, marginBottom: 8 }}>SESSION FEEDBACK</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#f0e8d8", marginBottom: 10 }}>{feedback.focusArea}</div>
+          {level.focus && (
+            <div style={{ fontSize: 12, color: "rgba(240,232,216,0.62)", marginBottom: 10 }}>
+              Technique goal: {level.focus}
+            </div>
+          )}
+          <div style={{ display: "grid", gap: 8 }}>
+            {feedback.tips.map((tip) => (
+              <div key={tip} style={{ fontSize: 13, color: "rgba(240,232,216,0.72)", lineHeight: 1.55 }}>
+                {tip}
+              </div>
+            ))}
+          </div>
+          {feedback.topMissedNotes.length > 0 && (
+            <div style={{ fontSize: 12, color: "#f0c040", marginTop: 10 }}>
+              Most common misses: {feedback.topMissedNotes.join(", ")}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+          {nextLevelId && isFullLevel && (
+            <Link
+              href={`/practice/${nextLevelId}`}
+              style={{
+                padding: "15px",
+                borderRadius: 14,
+                fontWeight: 800,
+                fontSize: 16,
+                textDecoration: "none",
+                textAlign: "center",
+                display: "block",
+                background: "linear-gradient(135deg, #5c8a42, #3d6028)",
+                color: "white",
+                boxShadow: "0 4px 0 #2a4a18, 0 8px 28px rgba(92,138,66,0.4)",
+              }}
+            >
+              Next Level
+            </Link>
+          )}
+          <button
+            onClick={onRetrySlower}
+            style={{
+              padding: "13px",
+              borderRadius: 14,
+              fontWeight: 800,
+              fontSize: 15,
+              cursor: "pointer",
+              background: "rgba(58,122,107,0.12)",
+              color: "#b7e6dd",
+              border: "1.5px solid rgba(58,122,107,0.28)",
+            }}
+          >
+            Retry slower
+          </button>
+          <button
+            onClick={onSwitchToPractice}
+            style={{
+              padding: "13px",
+              borderRadius: 14,
+              fontWeight: 800,
+              fontSize: 15,
+              cursor: "pointer",
+              background: "rgba(106,158,232,0.12)",
+              color: "#bfd7ff",
+              border: "1.5px solid rgba(106,158,232,0.28)",
+            }}
+          >
+            Open practice mode
+          </button>
+          <button
+            onClick={onRestart}
+            style={{
+              padding: "13px",
+              borderRadius: 14,
+              fontWeight: 600,
+              fontSize: 15,
+              cursor: "pointer",
+              background: "rgba(255,255,255,0.07)",
+              color: "#f0e8d8",
+              border: "1.5px solid rgba(255,255,255,0.12)",
+            }}
+          >
+            Try Again
+          </button>
+          <Link
+            href="/practice"
+            style={{
+              padding: "13px",
+              borderRadius: 14,
+              fontWeight: 600,
+              fontSize: 15,
+              textDecoration: "none",
+              textAlign: "center",
+              background: "transparent",
+              color: "rgba(200,180,140,0.55)",
+              border: "1.5px solid rgba(255,255,255,0.08)",
+              display: "block",
+            }}
+          >
+            World Map
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const ONBOARD_KEY = "gha-v1-onboarded";
 
 function MiniRailPreview() {
@@ -457,14 +796,18 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   const { note, volume, isListening, error, start, stop } = pitchData;
   const backing = useBackingTrack();
   const { unlock, newest, dismissNewest } = useAchievements();
-  const { settings, setSpeedMultiplier, setMode, setDrumVolume } = usePracticeSettings();
+  const { settings, setSpeedMultiplier, setMode, setDrumVolume, setTimingOffsetMs } = usePracticeSettings();
+  const { addSession } = useSessionHistory();
   const [isStarting,       setIsStarting]       = useState(false);
+  const [segment, setSegment] = useState<PracticeSegment>("full");
   const speedMultiplier = settings.speedMultiplier;
   const isPractice = settings.mode === "practice";
+  const segmentState = useMemo(() => buildSegmentLevel(level, segment), [level, segment]);
+  const workingLevel = segmentState.level;
   const { noteStatuses, missLabels, activeNote, score, stars, hits, isComplete,
           elapsedRef, beatMs, leadInMs, centsOffset,
           combo, maxCombo, lastHitAt } = useGameLoop(
-    level, pitchData, backing.audioClockRef, speedMultiplier, isPractice ? "practice" : "timed",
+    workingLevel, pitchData, backing.audioClockRef, speedMultiplier, isPractice ? "practice" : "timed", settings.timingOffsetMs,
   );
 
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -472,10 +815,15 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     try { if (!localStorage.getItem(ONBOARD_KEY)) setShowOnboarding(true); } catch {}
   }, []);
 
-  const total   = level.notes.length;
+  const total   = workingLevel.notes.length;
   const played  = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;
   const accent  = activeNote ? STRING_ACCENT[activeNote.string] : "#c8553d";
   const volPct  = Math.min(100, volume * 800);
+  const feedback = useMemo(
+    () => buildSessionFeedback(workingLevel, noteStatuses, missLabels, hits, maxCombo),
+    [workingLevel, noteStatuses, missLabels, hits, maxCombo],
+  );
+  const savedSessionRef = useRef(false);
 
   const [hitKey, setHitKey] = useState(0);
   const prevHitsRef = useRef(0);
@@ -491,14 +839,37 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   useEffect(() => { backing.setVolume(settings.drumVolume); }, [settings.drumVolume]); // eslint-disable-line
 
   // Mark complete with the actual star rating
-  useEffect(() => { if (isComplete) markComplete(level.id, stars); }, [isComplete]); // eslint-disable-line
+  useEffect(() => { if (isComplete && segmentState.isFull) markComplete(level.id, stars); }, [isComplete, segmentState.isFull]); // eslint-disable-line
+  useEffect(() => {
+    if (!isComplete || savedSessionRef.current) return;
+    savedSessionRef.current = true;
+    addSession({
+      levelId: level.id,
+      levelTitle: level.title,
+      levelSubtitle: level.subtitle,
+      segmentLabel: segmentState.label,
+      worldNum,
+      levelNum,
+      mode: isPractice ? "practice" : "timed",
+      speedMultiplier,
+      bpm: Math.round(level.bpm * speedMultiplier),
+      score,
+      stars,
+      hits,
+      total,
+      misses: total - hits,
+      maxCombo,
+      topMissedNotes: feedback.topMissedNotes,
+      focusArea: feedback.focusArea,
+    });
+  }, [isComplete, addSession, level, worldNum, levelNum, isPractice, speedMultiplier, score, stars, hits, total, maxCombo, feedback, segmentState.label]); // eslint-disable-line
   useEffect(() => {
     if (isComplete && backing.isPlaying) backing.stop();
   }, [isComplete]); // eslint-disable-line
   useEffect(() => {
-    if (isListening && !backing.isPlaying && !isPractice) backing.start(beatMs, level.notes, leadInMs);
+    if (isListening && !backing.isPlaying && !isPractice) backing.start(beatMs, workingLevel.notes, leadInMs);
     if (!isListening && backing.isPlaying) backing.stop();
-  }, [isListening]); // eslint-disable-line
+  }, [isListening, workingLevel.notes]); // eslint-disable-line
   useEffect(() => () => { backing.stop(); }, []); // eslint-disable-line
 
   // Achievement: first note
@@ -515,10 +886,10 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   // Achievement: on level complete
   useEffect(() => {
     if (!isComplete) return;
-    unlock("first-level");
-    if (stars === 3) unlock("hat-trick");
-    if (hits === level.notes.length) unlock("perfect");
-  }, [isComplete, stars, hits, level.notes.length, unlock]);
+    if (segmentState.isFull) unlock("first-level");
+    if (segmentState.isFull && stars === 3) unlock("hat-trick");
+    if (segmentState.isFull && hits === workingLevel.notes.length) unlock("perfect");
+  }, [isComplete, stars, hits, workingLevel.notes.length, unlock, segmentState.isFull]);
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   const SPEED_KEYS: Record<string, 0.5 | 0.75 | 1 | 1.25 | 1.5> = {
@@ -543,10 +914,24 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     return () => window.removeEventListener("keydown", handler);
   }, [isListening, isStarting, start, stop, onRestart]); // eslint-disable-line
 
+  function retrySlower() {
+    setMode("timed");
+    setSpeedMultiplier(speedMultiplier <= 0.75 ? 0.5 : 0.75);
+    onRestart();
+  }
+
+  function switchToPracticeMode() {
+    setMode("practice");
+    onRestart();
+  }
+
   if (isComplete && !isPractice) {
     return (
-      <LevelComplete level={level} levelNum={levelNum} hits={hits} total={total}
-        stars={stars} maxCombo={maxCombo} accent={accent} onRestart={onRestart} nextLevelId={nextLevelId} />
+      <SessionCompletePanel level={level} levelNum={levelNum} completionLabel={segmentState.isFull ? `LEVEL ${levelNum} COMPLETE` : "SECTION COMPLETE"}
+        segmentLabel={segmentState.label} isFullLevel={segmentState.isFull} hits={hits} total={total}
+        stars={stars} maxCombo={maxCombo} accent={accent} feedback={feedback}
+        onRestart={onRestart} onRetrySlower={retrySlower} onSwitchToPractice={switchToPracticeMode}
+        nextLevelId={nextLevelId} />
     );
   }
 
@@ -565,11 +950,29 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
         }}>
           <div style={{ fontSize: 48 }}>🎸</div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.2em", marginBottom: 6 }}>PRACTICE COMPLETE</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: accent, letterSpacing: "0.2em", marginBottom: 6 }}>
+              {segmentState.isFull ? "PRACTICE COMPLETE" : "SECTION PRACTICE COMPLETE"}
+            </div>
             <h2 style={{ fontSize: 24, fontWeight: 900, margin: 0, color: "#f0e8d8" }}>Nice work!</h2>
             <p style={{ fontSize: 13, color: "rgba(200,180,140,0.55)", marginTop: 8, marginBottom: 0 }}>
-              You played through all {total} notes.
+              You played through all {total} notes in the {segmentState.label.toLowerCase()}.
             </p>
+          </div>
+          <div style={{
+            width: "100%",
+            borderRadius: 16,
+            padding: "14px 14px 12px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            textAlign: "left",
+          }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: accent, letterSpacing: "0.16em", marginBottom: 8 }}>NEXT FOCUS</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#f0e8d8", marginBottom: 8 }}>{feedback.focusArea}</div>
+            {feedback.tips.map((tip) => (
+              <div key={tip} style={{ fontSize: 13, color: "rgba(240,232,216,0.68)", lineHeight: 1.5, marginBottom: 6 }}>
+                {tip}
+              </div>
+            ))}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
             <button onClick={onRestart} style={{
@@ -578,6 +981,11 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
               color: "white", border: "none",
               boxShadow: `0 4px 0 ${accent}55, 0 8px 24px ${accent}44`,
             }}>Practice Again</button>
+            <button onClick={() => { setMode("timed"); onRestart(); }} style={{
+              padding: "13px", borderRadius: 14, fontWeight: 700, fontSize: 15, cursor: "pointer",
+              background: "rgba(58,122,107,0.12)", color: "#b7e6dd",
+              border: "1.5px solid rgba(58,122,107,0.28)",
+            }}>Return to timed mode</button>
             <Link href="/practice" style={{
               padding: "13px", borderRadius: 14, fontWeight: 600, fontSize: 15,
               textDecoration: "none", textAlign: "center",
@@ -622,6 +1030,9 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
               WORLD {worldNum} · LEVEL {levelNum}
             </div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "#f0e8d8" }}>{level.title}</div>
+            {!segmentState.isFull && (
+              <div style={{ fontSize: 10, color: "rgba(240,232,216,0.48)", marginTop: 2 }}>{segmentState.label}</div>
+            )}
           </div>
           {isListening && combo >= 2
             ? <ComboBadge combo={combo} accent={accent} />
@@ -763,6 +1174,48 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                 display: "flex", flexDirection: "column", gap: 16,
               }}>
 
+                {level.focus && (
+                  <div style={{
+                    borderRadius: 14,
+                    padding: "12px 14px",
+                    background: "rgba(58,122,107,0.12)",
+                    border: "1px solid rgba(58,122,107,0.18)",
+                  }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#b7e6dd", letterSpacing: "0.15em", marginBottom: 5 }}>TECHNIQUE GOAL</div>
+                    <div style={{ fontSize: 13, color: "rgba(240,232,216,0.76)", lineHeight: 1.55 }}>{level.focus}</div>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ minWidth: 52, flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.65)", letterSpacing: "0.15em" }}>SECTION</div>
+                    <div style={{ fontSize: 8, color: "rgba(200,180,140,0.3)", marginTop: 1 }}>practice slice</div>
+                  </div>
+                  <div style={{
+                    display: "flex", background: "rgba(255,255,255,0.05)",
+                    borderRadius: 10, padding: 3, gap: 2,
+                    border: "1px solid rgba(255,255,255,0.1)", flexWrap: "wrap",
+                  }}>
+                    {SEGMENT_OPTIONS.map(option => (
+                      <button key={option.id} onClick={() => setSegment(option.id)} style={{
+                        padding: "5px 10px", borderRadius: 7, fontSize: 11, fontWeight: 700,
+                        cursor: "pointer", transition: "background .12s, color .12s, box-shadow .12s",
+                        border: "none",
+                        background: segment === option.id ? accent : "transparent",
+                        color: segment === option.id ? "white" : "rgba(200,180,140,0.5)",
+                        boxShadow: segment === option.id ? `0 0 10px ${accent}55` : "none",
+                      }}>{option.short}</button>
+                    ))}
+                  </div>
+                  <span style={{
+                    fontSize: 12, fontWeight: 800, color: "rgba(200,180,140,0.75)",
+                    background: "rgba(255,255,255,0.06)", borderRadius: 6, padding: "3px 8px",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}>
+                    {segmentState.label}
+                  </span>
+                </div>
+
                 {/* SPEED row */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ minWidth: 52, flexShrink: 0 }}>
@@ -821,6 +1274,34 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                   {isPractice && (
                     <span style={{ fontSize: 10, color: "rgba(200,180,140,0.32)", fontStyle: "italic" }}>no score</span>
                   )}
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ minWidth: 52, flexShrink: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(200,180,140,0.65)", letterSpacing: "0.15em" }}>SYNC</div>
+                    <div style={{ fontSize: 8, color: "rgba(200,180,140,0.3)", marginTop: 1 }}>device timing</div>
+                  </div>
+                  <input
+                    type="range"
+                    min={-180}
+                    max={180}
+                    step={10}
+                    value={settings.timingOffsetMs}
+                    onChange={e => setTimingOffsetMs(parseInt(e.target.value, 10))}
+                    style={{ width: 140, accentColor: accent, cursor: "pointer" }}
+                  />
+                  <span style={{
+                    fontSize: 12, fontWeight: 800, color: "rgba(200,180,140,0.75)",
+                    background: "rgba(255,255,255,0.06)", borderRadius: 6, padding: "3px 8px",
+                    border: "1px solid rgba(255,255,255,0.08)", minWidth: 56, textAlign: "center",
+                  }}>
+                    {settings.timingOffsetMs > 0 ? `+${settings.timingOffsetMs}` : settings.timingOffsetMs} ms
+                  </span>
+                  <button onClick={() => setTimingOffsetMs(0)} style={{
+                    padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+                    cursor: "pointer", border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)", color: "rgba(240,232,216,0.7)",
+                  }}>Reset</button>
                 </div>
               </div>
             )}

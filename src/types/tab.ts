@@ -12,6 +12,7 @@ export interface Level {
   title: string;
   subtitle?: string;
   description?: string;
+  focus?: string;
   bpm: number;
   difficulty?: "easy" | "medium" | "hard";
   /** Legacy style key — no longer used by the backing track */

@@ -7,6 +7,8 @@ import world1 from "@/data/world1";
 import world2 from "@/data/world2";
 import world3 from "@/data/world3";
 import { useProgress } from "@/hooks/useProgress";
+import { useSessionHistory } from "@/hooks/useSessionHistory";
+import { useSetupProgress } from "@/hooks/useSetupProgress";
 import type { Level, World } from "@/types/tab";
 
 const ALL_WORLDS = [world1, world2, world3];
@@ -241,6 +243,8 @@ function InfoStat({ label, value, accent }: { label: string; value: string; acce
 export default function PracticePage() {
   const router = useRouter();
   const { isUnlocked, isCompleted, getBestStars } = useProgress();
+  const { summary, sessions } = useSessionHistory();
+  const { isReady } = useSetupProgress();
   const [worldIndex, setWorldIndex] = useState(0);
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(() => getNextUnlockedIndex(ALL_WORLDS[0], isUnlocked, isCompleted));
 
@@ -251,6 +255,7 @@ export default function PracticePage() {
   const bestStars = getBestStars(activeLevel.id);
   const worldDoneCount = activeWorld.levels.filter((level) => isCompleted(level.id)).length;
   const nextRecommendedIndex = getNextUnlockedIndex(activeWorld, isUnlocked, isCompleted);
+  const worldSessions = sessions.filter((session) => session.worldNum === activeWorld.number).slice(0, 2);
 
   function handleWorldChange(index: number) {
     const world = ALL_WORLDS[index];
@@ -283,7 +288,11 @@ export default function PracticePage() {
         <header style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "rgba(6,3,16,0.82)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>&lt;- Home</Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 900 }}>Practice Map</div>
-          <Link href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <Link href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
+            <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
+            <Link href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
+          </div>
         </header>
 
         <section style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 56px" }}>
@@ -306,6 +315,31 @@ export default function PracticePage() {
                 W{world.number} / {world.title}
               </button>
             ))}
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 14, marginBottom: 18 }}>
+            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "16px 18px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>SETUP</div>
+                  <div style={{ fontSize: 18, fontWeight: 900 }}>{isReady ? "Rig looks ready" : "Finish your setup check"}</div>
+                </div>
+                <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 12, fontWeight: 700 }}>
+                  Open setup
+                </Link>
+              </div>
+              <div style={{ marginTop: 8, color: "rgba(240,232,216,0.62)", fontSize: 13, lineHeight: 1.6 }}>
+                {isReady ? "Mic, tuner, and count-in are already confirmed locally." : "Do the quick setup flow once so the app feels more dependable before practice."}
+              </div>
+            </div>
+
+            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "16px 18px" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: "#f0c040", marginBottom: 6 }}>WEEKLY SIGNAL</div>
+              <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 8 }}>{summary.recent7Count} sessions this week</div>
+              <div style={{ color: "rgba(240,232,216,0.62)", fontSize: 13, lineHeight: 1.6 }}>
+                Average timed accuracy is {summary.avgAccuracy}% and your current coaching focus is {summary.recommendedFocus.toLowerCase()}
+              </div>
+            </div>
           </div>
 
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "start" }}>
@@ -370,6 +404,11 @@ export default function PracticePage() {
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 25, fontWeight: 900, marginBottom: 6 }}>{activeLevel.title}</div>
                 {activeLevel.subtitle && <div style={{ color: "rgba(240,232,216,0.64)", fontSize: 13, marginBottom: 12 }}>{activeLevel.subtitle}</div>}
                 <div style={{ color: "rgba(240,232,216,0.74)", fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>{activeLevel.description}</div>
+                {activeLevel.focus && (
+                  <div style={{ marginBottom: 14, borderRadius: 16, padding: "12px 14px", background: "rgba(58,122,107,0.12)", border: "1px solid rgba(58,122,107,0.18)", color: "#b7e6dd", fontSize: 13, lineHeight: 1.6 }}>
+                    Technique goal: {activeLevel.focus}
+                  </div>
+                )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
                   <InfoStat label="Tempo" value={`${activeLevel.bpm} BPM`} />
@@ -377,6 +416,20 @@ export default function PracticePage() {
                   <InfoStat label="Difficulty" value={(activeLevel.difficulty ?? "medium").toUpperCase()} accent={DIFFICULTY_COLOR[activeLevel.difficulty ?? "medium"]} />
                   <InfoStat label="Stars" value={`${bestStars}/3`} />
                 </div>
+
+                {worldSessions.length > 0 && (
+                  <div style={{ marginBottom: 16, borderRadius: 18, padding: "14px 14px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", color: "rgba(200,180,140,0.48)", marginBottom: 8 }}>RECENT WORLD RUNS</div>
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {worldSessions.map((session) => (
+                        <div key={session.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 12, color: "rgba(240,232,216,0.68)" }}>
+                          <span>{session.levelTitle}</span>
+                          <span style={{ color: "#f0c040", fontWeight: 800 }}>{session.score}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <button
                   onClick={() => handleStartLevel(activeLevel)}

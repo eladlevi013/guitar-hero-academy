@@ -48,6 +48,7 @@ export function useGameLoop(
   audioClockRef     : React.MutableRefObject<BackingTrackClock>,
   bpmMultiplier     : number = 1,
   mode              : "timed" | "practice" = "timed",
+  timingOffsetMs    : number = 0,
 ): GameLoopReturn {
   const beatMs   = 60000 / (level.bpm * bpmMultiplier);
   const leadInMs = LEAD_IN_BEATS * beatMs; // always an exact whole number of beats
@@ -200,7 +201,7 @@ export function useGameLoop(
         return;
       }
       if (startTimeRef.current === null) {
-        startTimeRef.current = (audioClock.startAtSec + audioClock.outputLatencySec) * 1000;
+        startTimeRef.current = (audioClock.startAtSec + audioClock.outputLatencySec) * 1000 + timingOffsetMs;
       }
       const elapsed = Math.max(0, audioClock.ctx.currentTime * 1000 - startTimeRef.current);
       elapsedRef.current = elapsed;
@@ -307,7 +308,7 @@ export function useGameLoop(
 
     const rafId = requestAnimationFrame(tick);
     return () => { cancelled = true; cancelAnimationFrame(rafId); };
-  }, [pitchData.isListening, level.id, bpmMultiplier, mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pitchData.isListening, level.id, bpmMultiplier, mode, timingOffsetMs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Derived values ────────────────────────────────────────────────────────
   const total   = level.notes.length;
