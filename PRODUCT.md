@@ -1,48 +1,52 @@
 # Guitar Hero Academy — Product Spec
 
-A browser-based guitar technique trainer. Real-time pitch detection via microphone, Guitar Hero–style scrolling tab rail, no song content — pure exercises.
+A browser-based lead guitar trainer. Real-time pitch detection via microphone, Guitar Hero–style scrolling tab rail, synced backing drums, and a structured curriculum across three progressively harder worlds. No songs, no subscription — pure technique practice.
 
 ---
 
 ## What it is
 
-A single-page web app (Next.js) where a guitar player practices technique drills by playing along to a scrolling tab rail. The app listens to the microphone, detects pitch in real time using the YIN algorithm, and scores each note as a hit or miss. The goal is speed and accuracy improvement, not entertainment.
+A Next.js web app where a guitar player practices technique drills by playing along to a scrolling tab rail. The app listens to the microphone, detects pitch in real time, and scores each note as a hit or miss. Practice that sounds like music instead of homework.
 
 ---
 
 ## World & Level Structure
 
-**One world: World 1 — The 5 Positions**
-
-All content is Em pentatonic across the neck, the standard 5 CAGED/pentatonic hand positions.
+### World 1 — Pentatonic & Blues Foundations
+Em pentatonic across all 5 CAGED positions, blues bends, call-and-response phrases, and single-string runs.
 
 | Level | Name | Focus | BPM |
 |---|---|---|---|
 | 1 | Penta Box 1 | Position 1, open box | 78 |
-| 2 | Penta Box 2 | Position 2, G shape (str6 frets 3&5) | 80 |
-| 3 | Penta Box 3 | Position 3, A shape (frets 5&7) | 83 |
-| 4 | Penta Box 4 | Position 4, B shape (frets 7&10/7&9) | 86 |
-| 5 | Penta Box 5 | Position 5, D shape (frets 10&12/9&12) | 89 |
-| 6 | Neck Runner | Positions 1→3→5 continuous run with hand shifts | 93 |
+| 2 | Penta Box 2 | Position 2, G shape | 80 |
+| 3 | Penta Box 3 | Position 3, A shape | 83 |
+| 4 | Penta Box 4 | Position 4, B shape | 86 |
+| 5 | Penta Box 5 | Position 5, D shape | 89 |
+| 6 | Neck Runner | Positions 1→3→5 continuous run | 93 |
 
-**Level design rules:**
-- No real songs, no recognizable riffs — exercises only
-- Notes must not fall on every consecutive beat (avoids machine-gun kick pattern)
-- Space notes ≥2 beats apart, or in groups of 4 quick notes followed by a 2-beat held note
-- Use `durationBeats: 2` held notes at phrase peaks and endings
+### World 2 — Major Scale & Modal Awareness
+Major scale in position, Dorian and Mixolydian flavors, interval skips, and sequencing patterns.
+
+### World 3 — Advanced Technique
+Arpeggios, extended patterns, positional shifts, string-skipping, and speed development.
+
+**18 levels total across 3 worlds.**
+
+Each level carries: `title`, `subtitle`, `description`, `bpm`, `difficulty` (easy/medium/hard), `focus` technique goal, and an array of `notes` (string, fret, target frequency, start beat, duration).
+
+**Level unlock progression:** completing level N unlocks level N+1 within a world.
 
 ---
 
 ## Core Gameplay Loop
 
 1. Player opens a level page (`/practice/[levelId]`)
-2. Taps **Start** (or presses `Space`) → browser asks for mic permission
-3. 4-beat drum lead-in counts down visually
-4. Notes scroll right-to-left on the tab rail; the white playhead line is the hit zone
-5. Player plays each note as it crosses the playhead
-6. YIN pitch detection compares detected frequency to the target — ±75 cents = hit
-7. Green circle = hit, red circle = miss; a miss label shows the note actually played (or "silent")
-8. Level ends → score screen shows %, star rating (3★ ≥80%, 2★ ≥60%, 1★ ≥40%), max combo
+2. Taps **Start Mic** → browser requests microphone permission
+3. 4-beat drum count-in plays before notes begin scrolling
+4. Notes scroll right-to-left; the playhead is the hit zone
+5. Pitch detection compares detected frequency to target — ±75 cents = hit
+6. Green = hit, dim red = miss (with the actual note played or `silent` label)
+7. Level completes when all notes have passed → results screen with score, stars, tips
 
 ---
 
@@ -50,49 +54,36 @@ All content is Em pentatonic across the neck, the standard 5 CAGED/pentatonic ha
 
 | Mode | Behaviour |
 |---|---|
-| **Timed** | Clock-driven, notes expire, misses break combo, full scoring |
-| **Practice** | No clock pressure, tab auto-scrolls to each note, no misses, no score |
+| **Timed** | Clock-driven, notes expire, misses break combo, full scoring, stars count |
+| **Practice** | No clock pressure, no misses, session logged but stars not updated |
 
-Toggle with the `M` key or the MODE segmented control (only before starting).
-
----
-
-## Speed Control
-
-Five speed multipliers available before starting:
-
-| Key | Multiplier | BPM example (Level 1) |
-|---|---|---|
-| `1` | 0.5× | 39 BPM |
-| `2` | 0.75× | 59 BPM |
-| `3` | 1× | 78 BPM |
-| `4` | 1.25× | 98 BPM |
-| `5` | 1.5× | 117 BPM |
+Default mode is configurable from the Player Hub. Both modes save to session history.
 
 ---
 
-## Keyboard Shortcuts
+## Practice Segments
 
-| Key | Action | When |
-|---|---|---|
-| `Space` | Start / Stop mic | Always |
-| `R` | Restart level | When stopped |
-| `Esc` | Back to World Map | Always |
-| `1`–`5` | Set speed (0.5×–1.5×) | When stopped |
-| `M` | Toggle Timed / Practice | When stopped |
+Drill specific parts of a level without replaying the full thing:
+
+| Segment | Notes |
+|---|---|
+| Full level | Complete run — only this awards stars |
+| Front half | First 50% of notes |
+| Back half | Second 50% of notes |
+| Last 8 notes | Final stretch drill |
+
+Segment state is separate from full-level progress so partial runs never overwrite your best star count.
 
 ---
 
 ## Tab Rail
 
-- Scrolls horizontally at a constant px/ms rate tied to BPM
-- String lines 1–6 (e → E), each a distinct color
+- Scrolls horizontally at a constant px/ms rate locked to AudioContext clock (not `Date.now`)
+- String lines 1–6, each a distinct color (blue / amber / green / teal / purple / red)
 - Note circles show fret number; `O` = open string
-- **Active** note (in hit window): bright string color, glow
-- **Hit**: green `#22c55e` with pop animation
-- **Missed**: dim red; small label fades out over 2s showing:
-  - Note name played (e.g. `G#3`) — sourced from the live YIN frequency at the time of miss
-  - `silent` (dim) — if no pitch was detected during the window
+- **Active** note (in hit window): bright string color with glow
+- **Hit**: green with pop animation
+- **Missed**: dim red; label fades out showing the note actually played or `silent`
 - Playhead pulses on the beat; ring flash on each hit
 - Combo ≥3/5/10 tints the rail blue/green/gold
 
@@ -102,33 +93,33 @@ Five speed multipliers available before starting:
 
 - **Algorithm**: YIN (de Cheveigné & Kawahara 2002)
 - **Buffer**: 4096 samples @ 44.1 kHz (~93 ms window)
-- **Rate**: runs every 3rd animation frame (~20 Hz) to avoid burning CPU
+- **Rate**: every 3rd animation frame (~20 Hz) to avoid burning CPU
 - **Guitar range filter**: 60–1500 Hz only
 - **Audio chain**: `getUserMedia` → DynamicsCompressor → Gain (×4) → AnalyserNode
 - **Hit tolerance**: ±75 cents
-- **Hit window**: note duration + 600 ms padding on each side (covers output latency + reaction time)
-- **Release detection**: sustained pitch doesn't re-trigger the next note — player must go silent or shift ≥150 cents
+- **Hit window**: note duration + 600 ms padding per side (covers output latency + reaction time)
+- **Release detection**: sustained pitch doesn't re-trigger; player must go silent or shift ≥150 cents
 
 ---
 
 ## Cents Meter
 
-Live tuning bar shown below the tab rail during a session:
+Live tuning bar shown during a session:
 
 - Green dot + "Perfect!" when within ±15¢
-- Amber when within ±40¢
-- Red when outside ±40¢
-- Dot tracks current pitch; fill bar shows sharp/flat direction
+- Amber within ±40¢, red beyond
+- Animated needle with smooth CSS transition — doubles as a real-time tuner
 
 ---
 
-## Backing Track
+## Backing Drums
 
-- Synthesized drum pattern (Web Audio API), no audio files
-- Kick on each note's start beat; hi-hat fills the rests; snare on beat 2 & 4
-- Plays only in Timed mode, silent in Practice mode
-- Volume control in the transport row (range slider, accent-color tinted)
-- Stops automatically on level complete
+- Synthesized drum pattern via Web Audio API — no audio files to load or cache
+- Kick, snare, hi-hat pattern locked to the level BPM
+- 4-beat count-in before first note
+- Volume adjustable from Player Hub settings (0–100%)
+- Stops automatically on level completion or mic stop
+- Silent in Practice mode; plays in Timed mode
 
 ---
 
@@ -136,63 +127,174 @@ Live tuning bar shown below the tab rail during a session:
 
 - **Score**: `hits / total × 100`, rounded
 - **Stars**: 3★ ≥80%, 2★ ≥60%, 1★ ≥40%, 0★ below
-- **Combo**: consecutive hits; breaks on miss; displayed in header when ≥2
+- **Combo**: consecutive hits; breaks on miss; shown in the header when ≥2
 - **Max combo**: tracked per attempt, shown on results screen
-- **Progress**: best star rating per level saved in `localStorage` (`gha-v1-stars`, `gha-v1-progress`)
+- **Best stars**: per-level best is saved to `localStorage` and never overwritten by a worse run
 
 ---
 
-## Achievements
+## Session Feedback
 
-Stored in `localStorage` key `gha-v1-achievements`. Toast shown for 3.5 s.
+After each run the app generates personalized coaching based on the attempt:
 
-| ID | Title | Trigger |
-|---|---|---|
-| `first-note` | First Note | Hit 1 note |
-| `first-level` | First Level | Complete any level |
-| `on-a-roll` | On a Roll | Combo ≥5 |
-| `unstoppable` | Unstoppable | Combo ≥10 |
-| `hat-trick` | Hat Trick | 3-star a level |
-| `perfect` | Perfect | Hit every note |
+- Identifies the **most-missed string** and **top 2 missed notes** by label
+- Accuracy-banded tips (<60%, 60–85%, >85%)
+- Combo-based advice if max combo was low relative to level length
+- **Focus area** label surfaced in session history (e.g. "String 4 accuracy", "Pitch lock on F#4")
 
 ---
 
-## First-Time Onboarding
+## Daily Challenge
 
-Shown once on first visit (checked against `gha-v1-onboarded` in localStorage).
+- One level per UTC calendar day, rotating across all 18 levels
+- Shareable result card with stars, hit/miss bar, and score percentage
+- One-tap share to X (Twitter) or clipboard copy
+- Achievements: `Daily Grind` (complete a daily), `Daily Legend` (3★ on a daily)
 
-3-screen modal, dismissible at any point via "Skip":
+---
 
-1. **Play near your mic or plug in** — laptop mic or direct input
-2. **Allow microphone when prompted** — browser permission flow
-3. **Hit the notes as they scroll** — static mini rail preview showing one green hit and one red miss with note label
+## Achievements (12 total)
 
-"Got it" on screen 3 sets `gha-v1-onboarded = 1` and closes.
+Stored in `localStorage`. Toast notification fires on unlock for 3.5 s.
+
+| ID | Title | Icon | Trigger |
+|---|---|---|---|
+| `first-note` | First Note | 🎵 | Hit your very first note |
+| `first-level` | Level Complete | ✅ | Finish any level |
+| `hat-trick` | Hat Trick | ⭐ | Earn 3★ on any level |
+| `perfect` | Perfect Run | 💎 | Hit 100% in one level |
+| `on-a-roll` | On a Roll | 🔥 | Hit 5 notes in a row |
+| `unstoppable` | Unstoppable | ⚡ | Hit 10 notes in a row |
+| `world1-done` | Foundations | 🏆 | Complete all 6 levels of World 1 |
+| `world2-done` | Scale Scholar | 🎓 | Complete all 6 levels of World 2 |
+| `world3-done` | Technique Lord | 👑 | Complete all 6 levels of World 3 |
+| `all-worlds` | Guitar Hero | 🌟 | Complete all 18 levels |
+| `daily-done` | Daily Grind | 📅 | Complete a daily challenge |
+| `daily-perfect` | Daily Legend | 🏅 | 3★ on a daily challenge |
+
+---
+
+## Player Hub (`/player`)
+
+Dedicated player profile and settings page:
+
+### Stats at a glance
+Levels cleared, stars banked, practice streak, achievements unlocked.
+
+### Timing Calibration
+- ±180 ms audio latency offset slider
+- Quick-select preset buttons (−60, −30, 0, +30, +60 ms)
+- "Play timing preview" — 4-click count-in to test the current offset
+- Adjusts the note rail scroll rate so what you hear matches what you see
+
+### Session Defaults
+- Default mode (Timed / Practice)
+- Drum volume (0–100%)
+- Both persist across sessions
+
+### Practice Rig Status
+Quick-glance mic / tuner / audio check state without re-running setup.
+
+### Recent Sessions Log
+Last 6 runs with: level title, segment label, focus area, mode, score, timestamp.
+
+### Focus Patterns
+Top 3 most-practiced focus areas derived from session history — shows where you keep coming back.
+
+### Achievement Grid
+All 12 achievements shown with earned vs. locked state.
+
+---
+
+## Setup Flow (`/setup`)
+
+Guided 3-step flow that runs once and saves its state locally. All subsequent sessions show a readiness badge without re-running setup.
+
+1. **Mic check** — start mic, watch the volume meter go green, mark confirmed
+2. **Tuner lock** — pluck a note, see it detected in the live tuner, save the check
+3. **Count-in audio** — play a 4-click count-in through the device speakers, confirm audible
+
+Setup state shown as a readiness indicator on: homepage, practice map, and player hub.
+
+---
+
+## Practice Map (`/practice`)
+
+Interactive world map with:
+
+- **World tab switcher** — W1 / W2 / W3 selector with accent colors
+- **Status strip** — rig readiness, session count, avg accuracy, coaching focus at a glance below tabs
+- **SVG node map** — animated road path with 6 nodes, locked nodes show padlock icon
+- **Level list** — all 6 levels with title, BPM, stars, locked/unlocked state; click any to preview
+- **"Jump to recommendation"** — highlights the next incomplete level
+- **Level detail panel** — description, focus goal, difficulty, note count, BPM, best stars, recent world runs, start button
+- **Recent world runs** — last 2 sessions from the active world shown in the detail panel
+
+---
+
+## Session History & Analytics
+
+All session data stored in `localStorage`:
+
+**Per-session fields:** level ID, title, world number, score, stars, hit count, focus area, segment label, mode, timestamp.
+
+**Derived summary (shown in Player Hub and homepage):**
+- Streak days (consecutive days with at least 1 session)
+- Runs in last 7 days
+- Average accuracy (%)
+- Total practice minutes
+- Recommended coaching focus (most common weak area across recent sessions)
 
 ---
 
 ## localStorage Keys
 
-| Key | Type | Content |
-|---|---|---|
-| `gha-v1-progress` | `string[]` | Completed level IDs |
-| `gha-v1-stars` | `Record<string, 1\|2\|3>` | Best star count per level |
-| `gha-v1-achievements` | `string[]` | Unlocked achievement IDs |
-| `gha-v1-onboarded` | `"1"` | Set after onboarding modal dismissed |
+| Key | Content |
+|---|---|
+| `gha-v1-progress` | Completed level IDs + best star counts |
+| `gha-v1-achievements` | Unlocked achievement IDs |
+| `gha-v1-session-history` | Array of up to 50 recent sessions |
+| `gha-v1-setup-progress` | Mic / tuner / audio check flags |
+| `gha-v1-practice-settings` | Mode, drum volume, timing offset ms |
+
+All reads/writes are wrapped in try/catch so storage errors are silent.
 
 ---
 
-## Tech Stack
+## Production-Ready Status
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 15 (App Router) |
-| Language | TypeScript |
-| Styling | Inline styles + `globals.css` for keyframes |
-| Fonts | Inter (body), Playfair Display (display) via `next/font` |
-| Audio | Web Audio API — `getUserMedia`, `AnalyserNode`, Web Audio synthesis |
-| Pitch | Custom YIN implementation in `src/lib/yin.ts` |
-| Animation | `requestAnimationFrame` loop in TabRail (no React state per frame) |
+### Already shipped
+- Per-level SEO metadata (`<title>`, `<description>`) via Next.js `generateMetadata`
+- Static param generation — all 18 level pages pre-rendered at build time (`generateStaticParams`)
+- AudioContext clock used for note timing — immune to `Date.now` drift and tab throttling
+- Timing offset calibration to compensate for device-specific audio latency
+- Graceful mic error handling with in-UI error messages
+- All `localStorage` reads/writes guarded with try/catch
+- Backing track and mic automatically cleaned up on unmount
+- Session history capped at 50 entries to avoid unbounded storage growth
+
+### Recommended next steps
+
+**Reliability**
+- E2E tests (Playwright) for setup flow and level-completion happy path
+- Unit tests for the YIN pitch detection and game loop hit detection logic
+- Error boundary around PracticeSession to catch WebAudio failures gracefully
+
+**Reach**
+- PWA manifest + service worker — installable, works offline, app icon on home screen
+- Responsive layout pass for phones — tab rail and stat panels need mobile breakpoints
+- ARIA labels on all icon-only buttons and the SVG map nodes for screen reader support
+- Keyboard shortcuts documented in-app: `Space` start/stop, `R` restart, `Esc` back
+
+**Growth**
+- Cloud sync — optionally persist `localStorage` state to a backend for cross-device access
+- Daily challenge leaderboard — submit scores to a backend, show global ranking
+- Analytics — event tracking on level start/complete/drop to identify curriculum weak spots
+- Level editor — JSON-based authoring tool so the curriculum can grow without code changes
+
+**Audio quality**
+- Sampled drum audio as an opt-in upgrade over the synthesized oscillator pattern
+- Audio engine abstraction layer so the drum backend can be swapped without touching the game loop
 
 ---
 
@@ -201,26 +303,49 @@ Shown once on first visit (checked against `gha-v1-onboarded` in localStorage).
 ```
 src/
 ├── app/
-│   ├── globals.css              # Keyframe animations, CSS vars
-│   ├── layout.tsx               # Root layout, font loading
-│   ├── page.tsx                 # Home / world select
+│   ├── globals.css                  # Keyframe animations, CSS variables
+│   ├── layout.tsx                   # Root layout, font loading
+│   ├── page.tsx                     # Home dashboard
+│   ├── daily/page.tsx               # Daily challenge
+│   ├── player/page.tsx              # Player Hub (profile, settings, stats)
+│   ├── setup/page.tsx               # 3-step setup flow
 │   └── practice/
-│       ├── page.tsx             # World map with level cards
-│       └── [levelId]/page.tsx   # Dynamic level route
+│       ├── page.tsx                 # Practice Map (world map, level list)
+│       └── [levelId]/page.tsx       # Dynamic level route + SEO metadata
 ├── components/
-│   ├── PracticeSession.tsx      # Main game UI, control dock, onboarding modal
-│   └── TabRail.tsx              # Scrolling tab rail (rAF-driven, memoized)
+│   ├── PracticeSession.tsx          # Main game UI, segment picker, results, coaching
+│   ├── TabRail.tsx                  # Scrolling tab rail (rAF-driven, no React state per frame)
+│   └── Tuner.tsx                    # Live tuner display component
 ├── hooks/
-│   ├── useGameLoop.ts           # Timing, hit detection, miss labels, scoring
-│   ├── usePitchDetection.ts     # Mic capture, YIN throttling, note output
-│   ├── useBackingTrack.ts       # Drum synthesis and playback
-│   ├── useProgress.ts           # localStorage progress persistence
-│   └── useAchievements.ts       # Achievement unlock and toast
-├── lib/
-│   └── yin.ts                   # YIN algorithm + frequencyToNote utility
+│   ├── useGameLoop.ts               # Beat timing, hit detection, miss labels, scoring
+│   ├── usePitchDetection.ts         # Mic capture, YIN throttling, cents, note name output
+│   ├── useBackingTrack.ts           # Drum synthesis, count-in, AudioContext management
+│   ├── useProgress.ts               # Level completion and best-star persistence
+│   ├── useAchievements.ts           # Achievement unlock logic and toast state
+│   ├── useSessionHistory.ts         # Session log, summary stats, streak calculation
+│   ├── usePracticeSettings.ts       # Mode, drum volume, timing offset persistence
+│   └── useSetupProgress.ts          # Setup flow step state persistence
 ├── data/
-│   ├── world1.ts                # World 1 metadata and level list
-│   └── levels/world1-level1.ts … world1-level6.ts
+│   ├── world1.ts                    # World 1 metadata and 6 levels
+│   ├── world2.ts                    # World 2 metadata and 6 levels
+│   ├── world3.ts                    # World 3 metadata and 6 levels
+│   └── levelLibrary.ts              # Shared level data helpers
 └── types/
-    └── tab.ts                   # TabNote, Level types
+    └── tab.ts                       # TabNote, Level, World types
 ```
+
+---
+
+## Tech Stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router, static export) |
+| Language | TypeScript |
+| Styling | Inline styles + `globals.css` for keyframes |
+| Fonts | Inter (body), Playfair Display (display) via `next/font` |
+| Audio | Web Audio API — `getUserMedia`, `AnalyserNode`, oscillator synthesis |
+| Pitch | Custom YIN implementation |
+| Animation | `requestAnimationFrame` loop in TabRail (no React state per frame) |
+| State | React hooks + `localStorage` — no server, no account required |
+| Deployment | Vercel |

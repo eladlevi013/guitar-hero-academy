@@ -60,8 +60,7 @@ export default function Home() {
   }, [completed, getBestStars, isCompleted, isUnlocked]);
 
   const completionPct = Math.round((stats.completedLevels / stats.totalLevels) * 100);
-  const recentSessions = sessions.slice(0, 3);
-  const lastSession = recentSessions[0] ?? null;
+  const lastSession = sessions[0] ?? null;
 
   return (
     <main style={{
@@ -150,9 +149,6 @@ export default function Home() {
                 <Link href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(255,255,255,0.06)", color: "#f0e8d8", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(255,255,255,0.12)" }}>
                   Browse Worlds
                 </Link>
-                <Link href="/setup" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(58,122,107,0.12)", color: "#7bc3b4", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(58,122,107,0.24)" }}>
-                  Open Setup
-                </Link>
                 <Link href="/daily" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(240,192,60,0.08)", color: "#f0c040", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(240,192,60,0.22)" }}>
                   Daily Challenge
                 </Link>
@@ -179,12 +175,10 @@ export default function Home() {
                 <div style={{ fontSize: 12, color: "rgba(240,232,216,0.72)", lineHeight: 1.6 }}>{stats.nextLevel.description}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                <StatCard label="Technique" value={stats.nextLevel.focus ?? "Lead practice"} />
                 <StatCard label="Difficulty" value={DIFFICULTY_LABEL[stats.nextLevel.difficulty ?? "medium"]} />
                 <StatCard label="Tempo" value={`${stats.nextLevel.bpm} BPM`} />
-                <StatCard label="Notes" value={String(stats.nextLevel.notes.length)} />
-                <StatCard label="Stars" value={`${getBestStars(stats.nextLevel.id)}/3`} />
-                <StatCard label="Technique" value={stats.nextLevel.focus ?? "Lead practice"} />
-                <StatCard label="Setup" value={isReady ? "Ready" : "Finish checks"} />
+                <StatCard label="Best Stars" value={`${getBestStars(stats.nextLevel.id)}/3`} />
               </div>
             </div>
           </div>
@@ -200,44 +194,32 @@ export default function Home() {
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "8px 24px 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.95fr) minmax(0, 1.05fr)", gap: 18 }}>
-            <div style={{ background: "rgba(10,5,28,0.86)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>SETUP READY</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 900 }}>{isReady ? "Your rig is checked" : "Finish your setup flow"}</div>
+          <div style={{ background: "rgba(10,5,28,0.84)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "20px 22px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18, alignItems: "start" }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>READY TO PLAY</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 900, marginBottom: 10 }}>
+                  {isReady ? "Your setup is ready" : "One quick setup pass left"}
                 </div>
-                <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Open setup</Link>
+                <div style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>
+                  {isReady
+                    ? "Mic, tuner, and count-in checks are already saved, so you can jump straight into practice."
+                    : "Finish the setup flow once, then the app can open into practice without extra guesswork."}
+                </div>
+                {!isReady && (
+                  <Link href="/setup" style={{ display: "inline-block", textDecoration: "none", borderRadius: 14, background: "rgba(58,122,107,0.14)", color: "#b7e6dd", padding: "12px 16px", fontWeight: 800, border: "1px solid rgba(58,122,107,0.24)" }}>
+                    Finish setup
+                  </Link>
+                )}
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
                 <StatCard label="Mic" value={progress.micChecked ? "Checked" : "Pending"} />
                 <StatCard label="Tuner" value={progress.tunerChecked ? "Locked" : "Pending"} />
                 <StatCard label="Count-In" value={progress.audioChecked ? "Heard" : "Pending"} />
-              </div>
-              <div style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.7 }}>
-                {isReady
-                  ? "You have a saved local readiness check, so the app can open straight into practice with much less guesswork."
-                  : "Do this before long sessions so mic access, tuner lock, and speaker output are already confirmed."}
-              </div>
-            </div>
-
-            <div style={{ background: "rgba(10,5,28,0.86)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "#f0c040", marginBottom: 6 }}>PRACTICE TREND</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 900 }}>Recent training signal</div>
-                </div>
-                <div style={{ color: "rgba(240,232,216,0.56)", fontSize: 12 }}>{summary.totalSessions} local sessions saved</div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>
                 <StatCard label="Avg Accuracy" value={`${summary.avgAccuracy}%`} />
-                <StatCard label="Practice Time" value={`${summary.practiceMinutes} min`} />
-                <StatCard label="Focus" value={summary.recommendedFocus} />
-              </div>
-              <div style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.7 }}>
-                {lastSession
-                  ? `Last run: ${lastSession.levelTitle} at ${lastSession.score}% in ${lastSession.mode} mode.`
-                  : "Once you finish a few sessions, this card will track your real practice trend and show what needs attention."}
+                <StatCard label="This Week" value={`${summary.recent7Count} runs`} />
+                <StatCard label="Last Run" value={lastSession ? `${lastSession.score}%` : "No runs yet"} />
               </div>
             </div>
           </div>
@@ -296,46 +278,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 72px" }}>
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>SESSION HISTORY</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>What your last runs are saying</h2>
-            </div>
-          </div>
-
-          {recentSessions.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
-              {recentSessions.map((session) => (
-                <div key={session.id} style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: 20 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: session.mode === "timed" ? "#c8553d" : "#3a7a6b" }}>
-                      {session.mode.toUpperCase()}
-                    </div>
-                    <div style={{ color: "#f0c040", fontSize: 12, fontWeight: 800 }}>{session.stars}/3 stars</div>
-                  </div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900, marginBottom: 6 }}>{session.levelTitle}</div>
-                  <div style={{ color: "rgba(240,232,216,0.58)", fontSize: 13, marginBottom: 12 }}>{session.levelSubtitle ?? `World ${session.worldNum} - Level ${session.levelNum}`}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 12 }}>
-                    <StatCard label="Score" value={`${session.score}%`} />
-                    <StatCard label="Combo" value={`x${session.maxCombo}`} />
-                    <StatCard label="Speed" value={`${session.speedMultiplier}x`} />
-                    <StatCard label="Focus" value={session.focusArea} />
-                  </div>
-                  <div style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.65 }}>
-                    {session.topMissedNotes.length > 0
-                      ? `Most common misses: ${session.topMissedNotes.join(", ")}.`
-                      : "No repeated misses on that run."}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 22, padding: 22, color: "rgba(240,232,216,0.66)", fontSize: 14, lineHeight: 1.7 }}>
-              Your recent runs will appear here once you finish a few levels. This is where the app starts becoming worth a login later, because the practice data is already meaningful.
-            </div>
-          )}
-        </section>
       </div>
     </main>
   );

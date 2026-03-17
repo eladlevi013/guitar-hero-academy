@@ -8,7 +8,8 @@
       "WebSearch",
       "Bash(find:*)",
       "WebFetch(domain:appliedguitartheory.com)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Read(//c/Users/eladl/OneDrive/**)"
     ]
   }
 }

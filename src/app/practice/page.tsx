@@ -317,29 +317,86 @@ export default function PracticePage() {
             ))}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 14, marginBottom: 18 }}>
-            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "16px 18px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>SETUP</div>
-                  <div style={{ fontSize: 18, fontWeight: 900 }}>{isReady ? "Rig looks ready" : "Finish your setup check"}</div>
+          <div style={{
+            background: "rgba(10,5,28,0.82)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 20,
+            padding: "14px 20px",
+            marginBottom: 18,
+            display: "flex",
+            alignItems: "center",
+            gap: 0,
+            flexWrap: "wrap",
+          }}>
+            {/* Rig status */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 20px 6px 0" }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                background: isReady ? "#7ac85a" : "#f0c040",
+                boxShadow: isReady ? "0 0 8px #7ac85a99" : "0 0 8px #f0c04099",
+              }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: isReady ? "#7ac85a" : "#f0c040", lineHeight: 1 }}>
+                  {isReady ? "Rig ready" : "Setup pending"}
                 </div>
-                <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 12, fontWeight: 700 }}>
-                  Open setup
-                </Link>
+                <div style={{ fontSize: 11, color: "rgba(200,180,140,0.42)", marginTop: 3 }}>
+                  mic · tuner · audio
+                </div>
               </div>
-              <div style={{ marginTop: 8, color: "rgba(240,232,216,0.62)", fontSize: 13, lineHeight: 1.6 }}>
-                {isReady ? "Mic, tuner, and count-in are already confirmed locally." : "Do the quick setup flow once so the app feels more dependable before practice."}
-              </div>
+              <Link href="/setup" style={{ textDecoration: "none", fontSize: 11, color: "rgba(200,180,140,0.45)", fontWeight: 700, marginLeft: 4 }}>
+                Setup →
+              </Link>
             </div>
 
-            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "16px 18px" }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: "#f0c040", marginBottom: 6 }}>WEEKLY SIGNAL</div>
-              <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 8 }}>{summary.recent7Count} sessions this week</div>
-              <div style={{ color: "rgba(240,232,216,0.62)", fontSize: 13, lineHeight: 1.6 }}>
-                Average timed accuracy is {summary.avgAccuracy}% and your current coaching focus is {summary.recommendedFocus.toLowerCase()}
-              </div>
+            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+
+            {/* Sessions this week */}
+            <div style={{ padding: "6px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1 }}>{summary.recent7Count}</div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>RUNS / WEEK</div>
             </div>
+
+            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+
+            {/* Streak */}
+            <div style={{ padding: "6px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1, color: summary.streakDays > 0 ? "#f0c040" : "#f0e8d8" }}>
+                {summary.streakDays}
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>DAY STREAK</div>
+            </div>
+
+            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+
+            {/* Avg accuracy */}
+            <div style={{ padding: "6px 20px", textAlign: "center" }}>
+              <div style={{ fontSize: 20, fontWeight: 900, lineHeight: 1 }}>{summary.avgAccuracy}%</div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>AVG ACCURACY</div>
+            </div>
+
+            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+
+            {/* Coaching focus */}
+            <div style={{ padding: "6px 20px", flex: 1, minWidth: 140 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginBottom: 3 }}>COACHING FOCUS</div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{summary.recommendedFocus}</div>
+            </div>
+
+            {/* Daily shortcut */}
+            <Link href="/daily" style={{
+              textDecoration: "none",
+              borderRadius: 12,
+              background: "rgba(240,192,60,0.08)",
+              border: "1px solid rgba(240,192,60,0.18)",
+              color: "#f0c040",
+              fontSize: 12,
+              fontWeight: 800,
+              padding: "10px 14px",
+              flexShrink: 0,
+              marginLeft: "auto",
+            }}>
+              Daily →
+            </Link>
           </div>
 
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "start" }}>
