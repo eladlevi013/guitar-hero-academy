@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AccountMenu from "@/components/AccountMenu";
+import { libraryCollections } from "@/data/library";
 import world1 from "@/data/world1";
 import world2 from "@/data/world2";
 import world3 from "@/data/world3";
@@ -145,7 +147,12 @@ function WorldMap({
         const selected = selectedIndex === index;
 
         return (
-          <g key={level.id} onClick={() => onNodeSelect(index)} style={{ cursor: locked ? "default" : "pointer" }}>
+          <g key={level.id} onClick={() => onNodeSelect(index)} style={{ cursor: locked ? "default" : "pointer" }}
+            role={locked ? undefined : "button"}
+            aria-label={locked ? `Level ${index + 1} — locked` : `Level ${index + 1}: ${level.title}${done ? " (complete)" : ""}`}
+            tabIndex={locked ? -1 : 0}
+            onKeyDown={(e) => { if (!locked && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onNodeSelect(index); } }}
+          >
             <circle
               cx={x}
               cy={y}
@@ -240,6 +247,28 @@ function InfoStat({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
+function LevelSparkline({ levelId }: { levelId: string }) {
+  const { sessions } = useSessionHistory();
+  const history = sessions.filter(s => s.levelId === levelId && s.mode === "timed").slice(0, 8).reverse();
+  if (history.length < 2) return null;
+  return (
+    <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 12 }}>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(200,180,140,0.48)", marginBottom: 8 }}>SCORE TREND</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 28 }}>
+        {history.map((s, i) => {
+          const color = s.score >= 80 ? "#7ac85a" : s.score >= 60 ? "#f0c040" : "#e8553d";
+          return (
+            <div key={s.id} style={{ flex: 1, height: `${Math.max(10, (s.score / 100) * 100)}%`, background: color, borderRadius: 2, opacity: 0.4 + (i / history.length) * 0.6 }} />
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "rgba(200,180,140,0.3)", marginTop: 3 }}>
+        <span>{history[0]?.score}%</span><span>→ {history[history.length - 1]?.score}%</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PracticePage() {
   const router = useRouter();
   const { isUnlocked, isCompleted, getBestStars } = useProgress();
@@ -256,6 +285,7 @@ export default function PracticePage() {
   const worldDoneCount = activeWorld.levels.filter((level) => isCompleted(level.id)).length;
   const nextRecommendedIndex = getNextUnlockedIndex(activeWorld, isUnlocked, isCompleted);
   const worldSessions = sessions.filter((session) => session.worldNum === activeWorld.number).slice(0, 2);
+  const featuredCollections = libraryCollections.slice(0, 3);
 
   function handleWorldChange(index: number) {
     const world = ALL_WORLDS[index];
@@ -288,10 +318,12 @@ export default function PracticePage() {
         <header style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "rgba(6,3,16,0.82)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>&lt;- Home</Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 900 }}>Practice Map</div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
             <Link href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
             <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
+            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <AccountMenu />
           </div>
         </header>
 
@@ -317,7 +349,7 @@ export default function PracticePage() {
             ))}
           </div>
 
-          <div style={{
+          <div className="status-strip" style={{
             background: "rgba(10,5,28,0.82)",
             border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 20,
@@ -348,7 +380,7 @@ export default function PracticePage() {
               </Link>
             </div>
 
-            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+            <div className="status-divider" style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
 
             {/* Sessions this week */}
             <div style={{ padding: "6px 20px", textAlign: "center" }}>
@@ -356,7 +388,7 @@ export default function PracticePage() {
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>RUNS / WEEK</div>
             </div>
 
-            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+            <div className="status-divider" style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
 
             {/* Streak */}
             <div style={{ padding: "6px 20px", textAlign: "center" }}>
@@ -366,7 +398,7 @@ export default function PracticePage() {
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>DAY STREAK</div>
             </div>
 
-            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+            <div className="status-divider" style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
 
             {/* Avg accuracy */}
             <div style={{ padding: "6px 20px", textAlign: "center" }}>
@@ -374,7 +406,7 @@ export default function PracticePage() {
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: "rgba(200,180,140,0.45)", marginTop: 3 }}>AVG ACCURACY</div>
             </div>
 
-            <div style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
+            <div className="status-divider" style={{ width: 1, height: 36, background: "rgba(255,255,255,0.07)", flexShrink: 0 }} />
 
             {/* Coaching focus */}
             <div style={{ padding: "6px 20px", flex: 1, minWidth: 140 }}>
@@ -399,7 +431,41 @@ export default function PracticePage() {
             </Link>
           </div>
 
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "start" }}>
+          <section style={{ marginBottom: 18 }}>
+            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
+              <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SONG-FEEL COLLECTIONS</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900 }}>Use worlds for progression, library packs for mood</div>
+                </div>
+                <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Open library</Link>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+                {featuredCollections.map((collection) => (
+                  <button
+                    key={collection.id}
+                    onClick={() => router.push("/library")}
+                    style={{
+                      textAlign: "left",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
+                      borderRadius: 18,
+                      padding: "16px 16px 15px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: collection.accentColor, marginBottom: 6 }}>{collection.subtitle.toUpperCase()}</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, marginBottom: 8 }}>{collection.title}</div>
+                    <div style={{ color: "rgba(240,232,216,0.6)", fontSize: 12, lineHeight: 1.55, marginBottom: 10 }}>{collection.description}</div>
+                    <div style={{ color: "rgba(200,180,140,0.45)", fontSize: 11, fontWeight: 700 }}>{collection.drillIds.length} drills</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <div className="practice-layout" style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "start" }}>
             <div style={{ flex: "1 1 470px", minWidth: 320, display: "grid", gap: 16 }}>
               <div style={{ background: "rgba(10,5,28,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.32)" }}>
                 <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
@@ -445,7 +511,7 @@ export default function PracticePage() {
               </div>
             </div>
 
-            <div style={{ flex: "0 0 390px", width: "100%", maxWidth: 390, display: "grid", gap: 16, margin: "0 auto" }}>
+            <div className="practice-map-sidebar" style={{ flex: "0 0 390px", width: "100%", maxWidth: 390, display: "grid", gap: 16, margin: "0 auto" }}>
               <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 18, boxShadow: "0 18px 48px rgba(0,0,0,0.32)" }}>
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: activeWorld.accentColor, marginBottom: 6 }}>PATH VIEW</div>
@@ -467,11 +533,14 @@ export default function PracticePage() {
                   </div>
                 )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, marginBottom: 10 }}>
                   <InfoStat label="Tempo" value={`${activeLevel.bpm} BPM`} />
                   <InfoStat label="Notes" value={String(activeLevel.notes.length)} />
                   <InfoStat label="Difficulty" value={(activeLevel.difficulty ?? "medium").toUpperCase()} accent={DIFFICULTY_COLOR[activeLevel.difficulty ?? "medium"]} />
                   <InfoStat label="Stars" value={`${bestStars}/3`} />
+                </div>
+                <div style={{ marginBottom: 16 }}>
+                  <LevelSparkline levelId={activeLevel.id} />
                 </div>
 
                 {worldSessions.length > 0 && (

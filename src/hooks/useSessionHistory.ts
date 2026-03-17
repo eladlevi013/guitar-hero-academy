@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { UPDATED_AT_KEYS, touchUpdatedAt } from "@/lib/storage";
 
 const SESSION_HISTORY_KEY = "gha-v1-session-history";
 const SESSION_HISTORY_EVENT = "gha:session-history";
@@ -62,6 +63,7 @@ function writeSessionHistory(sessions: PracticeSessionRecord[]) {
     cachedHistoryRaw = raw;
     cachedHistory = sessions;
     window.localStorage.setItem(SESSION_HISTORY_KEY, raw);
+    touchUpdatedAt(UPDATED_AT_KEYS.sessionHistory);
     window.dispatchEvent(new Event(SESSION_HISTORY_EVENT));
   } catch {}
 }

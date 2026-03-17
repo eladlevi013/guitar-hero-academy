@@ -1,0 +1,26 @@
+import { MetadataRoute } from "next";
+import world1 from "@/data/world1";
+import world2 from "@/data/world2";
+import world3 from "@/data/world3";
+
+const BASE = "https://guitar-hero-academy.vercel.app";
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  const levelEntries = [world1, world2, world3].flatMap((world) =>
+    world.levels.map((level) => ({
+      url: `${BASE}/practice/${level.id}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    }))
+  );
+
+  return [
+    { url: BASE, changeFrequency: "weekly", priority: 1 },
+    { url: `${BASE}/practice`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/library`, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE}/daily`, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/player`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${BASE}/setup`, changeFrequency: "monthly", priority: 0.5 },
+    ...levelEntries,
+  ];
+}

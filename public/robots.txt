@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://guitar-hero-academy.vercel.app/sitemap.xml

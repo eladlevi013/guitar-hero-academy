@@ -2,10 +2,14 @@
 
 import Link from "next/link";
 import { ReactNode, useMemo, useState } from "react";
+import AccountMenu from "@/components/AccountMenu";
+import CloudSyncCallout from "@/components/CloudSyncCallout";
 import world1 from "@/data/world1";
 import world2 from "@/data/world2";
 import world3 from "@/data/world3";
 import { ALL_ACHIEVEMENTS, useAchievements } from "@/hooks/useAchievements";
+import { useAnonymousId } from "@/hooks/useAnonymousId";
+import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
 import { useProgress } from "@/hooks/useProgress";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
@@ -57,12 +61,151 @@ function formatDate(iso: string) {
   }).format(new Date(iso));
 }
 
+function PracticeHeatmap({ sessions }: { sessions: { timestamp: string }[] }) {
+  const NUM_WEEKS = 26;
+  const NUM_DAYS = NUM_WEEKS * 7; // 182
+
+  const { cells, monthLabels, totalSessions, streakDays } = useMemo(() => {
+    // Build a map of UTC date string -> count
+    const countByDate = new Map<string, number>();
+    for (const s of sessions) {
+      const d = new Date(s.timestamp);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      countByDate.set(key, (countByDate.get(key) ?? 0) + 1);
+    }
+
+    // Build array of 182 days ending today
+    const today = new Date();
+    const todayUtc = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+
+    const days: { dateKey: string; count: number; date: Date }[] = [];
+    for (let i = NUM_DAYS - 1; i >= 0; i--) {
+      const d = new Date(todayUtc.getTime() - i * 86400000);
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      days.push({ dateKey: key, count: countByDate.get(key) ?? 0, date: d });
+    }
+
+    // Group into weeks (columns of 7 days)
+    const weeks: { dateKey: string; count: number; date: Date }[][] = [];
+    for (let w = 0; w < NUM_WEEKS; w++) {
+      weeks.push(days.slice(w * 7, w * 7 + 7));
+    }
+
+    // Month labels: for each week column, figure out if the month changed from the previous week
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const labels: (string | null)[] = weeks.map((week, wi) => {
+      const firstDay = week[0];
+      if (!firstDay) return null;
+      const month = firstDay.date.getUTCMonth();
+      if (wi === 0) return monthNames[month];
+      const prevWeek = weeks[wi - 1];
+      const prevMonth = prevWeek?.[0]?.date.getUTCMonth();
+      if (month !== prevMonth) return monthNames[month];
+      return null;
+    });
+
+    // Compute streak
+    let streak = 0;
+    for (let i = days.length - 1; i >= 0; i--) {
+      if ((days[i]?.count ?? 0) > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      cells: weeks,
+      monthLabels: labels,
+      totalSessions: sessions.length,
+      streakDays: streak,
+    };
+  }, [sessions]);
+
+  function cellColor(count: number): string {
+    if (count === 0) return "rgba(255,255,255,0.04)";
+    if (count === 1) return "rgba(200,85,61,0.28)";
+    if (count === 2) return "rgba(200,85,61,0.55)";
+    return "rgba(200,85,61,0.85)";
+  }
+
+  const CELL = 10;
+  const GAP = 2;
+
+  return (
+    <div>
+      {/* Title bar */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>
+          <span style={{ color: "rgba(200,85,61,0.9)", fontWeight: 900 }}>{totalSessions}</span>
+          <span style={{ color: "rgba(240,232,216,0.6)", marginLeft: 4 }}>total sessions</span>
+        </div>
+        {streakDays > 0 && (
+          <div style={{ fontSize: 13, fontWeight: 700 }}>
+            <span style={{ color: "#f0c040", fontWeight: 900 }}>{streakDays}</span>
+            <span style={{ color: "rgba(240,232,216,0.6)", marginLeft: 4 }}>day streak</span>
+          </div>
+        )}
+      </div>
+
+      {/* Month labels row */}
+      <div style={{ display: "flex", gap: GAP, marginBottom: 4 }}>
+        {cells.map((_, wi) => (
+          <div key={wi} style={{ width: CELL, fontSize: 8, color: "rgba(200,180,140,0.5)", fontWeight: 700, whiteSpace: "nowrap", overflow: "visible" }}>
+            {monthLabels[wi] ?? ""}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div className="heatmap-scroll" style={{ display: "flex", gap: GAP }}>
+        {cells.map((week, wi) => (
+          <div key={wi} style={{ display: "flex", flexDirection: "column", gap: GAP }}>
+            {week.map((day, di) => (
+              <div
+                key={di}
+                title={`${day.dateKey}: ${day.count} session${day.count === 1 ? "" : "s"}`}
+                style={{
+                  width: CELL,
+                  height: CELL,
+                  borderRadius: 2,
+                  background: cellColor(day.count),
+                  cursor: "default",
+                }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10 }}>
+        <span style={{ fontSize: 10, color: "rgba(200,180,140,0.45)" }}>Less</span>
+        {[0, 1, 2, 3].map((level) => (
+          <div
+            key={level}
+            style={{
+              width: CELL,
+              height: CELL,
+              borderRadius: 2,
+              background: cellColor(level),
+            }}
+          />
+        ))}
+        <span style={{ fontSize: 10, color: "rgba(200,180,140,0.45)" }}>More</span>
+      </div>
+    </div>
+  );
+}
+
 export default function PlayerPage() {
   const { completed, getBestStars, reset: resetProgress } = useProgress();
   const { unlocked } = useAchievements();
   const { sessions, summary } = useSessionHistory();
   const { progress, isReady, reset: resetSetup } = useSetupProgress();
   const { settings, setMode, setDrumVolume, setTimingOffsetMs, reset: resetSettings } = usePracticeSettings();
+  const { autoAdvance, setAutoAdvance } = useAutoAdvance();
+  const anonymousId = useAnonymousId();
   const [previewStatus, setPreviewStatus] = useState<"idle" | "playing" | "done">("idle");
 
   const totals = useMemo(() => {
@@ -106,6 +249,28 @@ export default function PlayerPage() {
     }
   }
 
+  function exportData() {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      anonymousId,
+      sessions,
+      progress: { completedLevelIds: completed },
+      achievements: { unlockedIds: unlocked },
+      settings,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gha-data-${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <main
       style={{
@@ -121,13 +286,15 @@ export default function PlayerPage() {
             {"<-"} Home
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Player Hub</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
             <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>Practice</Link>
+            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <AccountMenu />
           </div>
         </header>
 
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(320px, 0.9fr)", gap: 20, marginBottom: 20 }}>
+        <section className="player-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(320px, 0.9fr)", gap: 20, marginBottom: 20 }}>
           <div style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "30px 28px", boxShadow: "0 18px 48px rgba(0,0,0,0.35)" }}>
             <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "6px 14px", borderRadius: 999, background: "rgba(106,158,232,0.14)", border: "1px solid rgba(106,158,232,0.24)", fontSize: 11, fontWeight: 800, color: "#bfd7ff", letterSpacing: "0.16em" }}>
               LOCAL PLAYER PROFILE
@@ -139,9 +306,19 @@ export default function PlayerPage() {
               <br />
               keep the feel tight.
             </h1>
-            <p style={{ maxWidth: 640, color: "rgba(240,232,216,0.72)", fontSize: 16, lineHeight: 1.7, margin: 0 }}>
+            <p style={{ maxWidth: 640, color: "rgba(240,232,216,0.72)", fontSize: 16, lineHeight: 1.7, margin: "0 0 10px" }}>
               This is the local value worth syncing later: your calibration, best runs, setup readiness, and the patterns showing up in your practice.
             </p>
+            {anonymousId && (
+              <div>
+                <div style={{ fontSize: 11, color: "rgba(200,180,140,0.35)", fontFamily: "monospace" }}>
+                  Device ID: {anonymousId.slice(0, 8)}...
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(200,180,140,0.28)", marginTop: 2 }}>
+                  Saved locally · syncs to your account when you sign in
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ background: "rgba(10,5,28,0.88)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.35)", display: "grid", gap: 10 }}>
@@ -152,7 +329,11 @@ export default function PlayerPage() {
           </div>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18, marginBottom: 18 }}>
+        <section style={{ marginBottom: 18 }}>
+          <CloudSyncCallout title="Keep your rig, streak, and progress backed up" compact />
+        </section>
+
+        <section className="player-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 18, marginBottom: 18 }}>
           <Panel eyebrow="TIMING" title="Calibration">
             <div style={{ display: "grid", gap: 14 }}>
               <div style={{ color: "rgba(240,232,216,0.66)", fontSize: 14, lineHeight: 1.65 }}>
@@ -213,7 +394,7 @@ export default function PlayerPage() {
           </Panel>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18, marginBottom: 18 }}>
+        <section className="player-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18, marginBottom: 18 }}>
           <Panel eyebrow="PREFERENCES" title="Session defaults">
             <div style={{ display: "grid", gap: 14 }}>
               <div>
@@ -231,6 +412,29 @@ export default function PlayerPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <input type="range" min={0} max={1} step={0.05} value={settings.drumVolume} onChange={(e) => setDrumVolume(parseFloat(e.target.value))} style={{ width: 220, accentColor: "#c8553d", cursor: "pointer" }} />
                   <div style={{ fontSize: 14, fontWeight: 800 }}>{Math.round(settings.drumVolume * 100)}%</div>
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "rgba(200,180,140,0.48)", letterSpacing: "0.14em", marginBottom: 8 }}>AUTO-ADVANCE</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button
+                    onClick={() => setAutoAdvance(!autoAdvance)}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      background: autoAdvance ? "rgba(200,85,61,0.18)" : "rgba(255,255,255,0.04)",
+                      color: "#f0e8d8",
+                      padding: "10px 14px",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontSize: 13,
+                    }}
+                  >
+                    {autoAdvance ? "ON" : "OFF"}
+                  </button>
+                  <div style={{ fontSize: 13, color: "rgba(240,232,216,0.6)", lineHeight: 1.5 }}>
+                    After a 3-star run, automatically go to the next level
+                  </div>
                 </div>
               </div>
               <button onClick={resetSettings} style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#f0e8d8", padding: "12px 15px", fontWeight: 700, cursor: "pointer", width: "fit-content" }}>
@@ -263,7 +467,14 @@ export default function PlayerPage() {
           </Panel>
         </section>
 
-        <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18 }}>
+        {/* Practice Calendar Heatmap */}
+        <section style={{ marginBottom: 18 }}>
+          <Panel eyebrow="CONSISTENCY" title="Practice Calendar">
+            <PracticeHeatmap sessions={sessions} />
+          </Panel>
+        </section>
+
+        <section className="player-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18 }}>
           <Panel eyebrow="COACHING" title="Focus patterns">
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14 }}>
               <MiniStat label="This Week" value={`${summary.recent7Count} runs`} accent="#c8553d" />
@@ -303,6 +514,9 @@ export default function PlayerPage() {
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button onClick={resetProgress} style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#f0e8d8", padding: "12px 15px", fontWeight: 700, cursor: "pointer" }}>
                 Reset level progress
+              </button>
+              <button onClick={exportData} style={{ borderRadius: 14, border: "1px solid rgba(106,158,232,0.24)", background: "rgba(106,158,232,0.08)", color: "#bfd7ff", padding: "12px 15px", fontWeight: 700, cursor: "pointer" }}>
+                Export my data
               </button>
             </div>
           </Panel>

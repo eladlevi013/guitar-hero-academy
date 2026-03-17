@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import AccountMenu from "@/components/AccountMenu";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { NoteStatus, useGameLoop } from "@/hooks/useGameLoop";
 import { useBackingTrack } from "@/hooks/useBackingTrack";
@@ -11,6 +12,13 @@ import { Level } from "@/types/tab";
 import { useAchievements } from "@/hooks/useAchievements";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
+import world1 from "@/data/world1";
+import world2 from "@/data/world2";
+import world3 from "@/data/world3";
+
+const WORLDS_BY_NUM: Record<number, { title: string; accentColor: string }> = {
+  1: world1, 2: world2, 3: world3,
+};
 
 const IN_TUNE_CENTS = 15;
 const CLOSE_CENTS   = 40;
@@ -332,6 +340,229 @@ function Confetti() {
   );
 }
 
+// ── Score sparkline ────────────────────────────────────────────────────────────
+function ScoreSparkline({ levelId }: { levelId: string }) {
+  const { sessions } = useSessionHistory();
+  const history = sessions
+    .filter(s => s.levelId === levelId && s.mode === "timed")
+    .slice(0, 12)
+    .reverse();
+  if (history.length < 2) return null;
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SCORE HISTORY</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 36 }}>
+        {history.map((s, i) => {
+          const isLast = i === history.length - 1;
+          const color = s.score >= 80 ? "#7ac85a" : s.score >= 60 ? "#f0c040" : "#e8553d";
+          return (
+            <div key={s.id} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+              {isLast && <div style={{ fontSize: 8, color, marginBottom: 2, fontWeight: 800 }}>{s.score}%</div>}
+              <div style={{ width: "100%", background: color, borderRadius: 3, opacity: isLast ? 1 : 0.45 + (i / history.length) * 0.4, height: `${Math.max(12, (s.score / 100) * 100)}%` }} />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "rgba(200,180,140,0.3)", marginTop: 3 }}>
+        <span>older</span><span>latest</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Per-string accuracy bars ───────────────────────────────────────────────────
+function StringAccuracyBars({ noteStatuses, notes }: {
+  noteStatuses: ReadonlyMap<string, NoteStatus>;
+  notes: Level["notes"];
+}) {
+  const stringStats = new Map<number, { hits: number; total: number }>();
+  for (const note of notes) {
+    const status = noteStatuses.get(note.id);
+    if (status === "hit" || status === "missed") {
+      const cur = stringStats.get(note.string) ?? { hits: 0, total: 0 };
+      stringStats.set(note.string, { hits: cur.hits + (status === "hit" ? 1 : 0), total: cur.total + 1 });
+    }
+  }
+  const entries = [...stringStats.entries()].sort((a, b) => a[0] - b[0]);
+  if (entries.length < 2) return null;
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(200,180,140,0.48)", marginBottom: 8 }}>STRING ACCURACY</div>
+      <div style={{ display: "grid", gap: 5 }}>
+        {entries.map(([str, { hits, total }]) => {
+          const pct = Math.round((hits / total) * 100);
+          const color = STRING_ACCENT[str as keyof typeof STRING_ACCENT] ?? "#c8553d";
+          return (
+            <div key={str} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color, minWidth: 42 }}>Str {str}</div>
+              <div style={{ flex: 1, height: 5, background: "rgba(255,255,255,0.07)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: `${pct}%`, height: "100%", background: color, borderRadius: 3, opacity: 0.75 }} />
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: pct >= 80 ? "#7ac85a" : pct >= 60 ? "#f0c040" : "#e8553d", minWidth: 30, textAlign: "right" }}>{pct}%</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Scale diagram ──────────────────────────────────────────────────────────────
+function ScaleDiagram({ notes }: { notes: Level["notes"] }) {
+  const positions = new Set(notes.map(n => `${n.string}-${n.fret}`));
+  const frets = notes.map(n => n.fret).filter(f => f > 0);
+  const minFret = frets.length ? Math.max(0, Math.min(...frets) - 1) : 0;
+  const maxFret = frets.length ? Math.min(22, Math.max(...frets) + 1) : 5;
+  const fretRange = Array.from({ length: maxFret - minFret + 1 }, (_, i) => i + minFret);
+  const STRINGS = [1, 2, 3, 4, 5, 6] as const;
+  const usedStrings = STRINGS.filter(s => notes.some(n => n.string === s));
+  return (
+    <div>
+      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SCALE POSITIONS</div>
+      <div style={{ overflowX: "auto", paddingBottom: 4 }}>
+        <div style={{ display: "inline-grid", gridTemplateColumns: `20px repeat(${fretRange.length}, 22px)`, gap: 0, minWidth: "fit-content" }}>
+          <div />
+          {fretRange.map(f => (
+            <div key={f} style={{ height: 14, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: "rgba(200,180,140,0.35)", fontWeight: 700 }}>
+              {f === 0 ? "O" : f}
+            </div>
+          ))}
+          {usedStrings.map(str => (
+            <>
+              <div key={`label-${str}`} style={{ height: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 3, fontSize: 8, color: STRING_ACCENT[str as keyof typeof STRING_ACCENT] ?? "rgba(200,180,140,0.45)", fontWeight: 700 }}>{str}</div>
+              {fretRange.map(fret => {
+                const active = positions.has(`${str}-${fret}`);
+                const color = STRING_ACCENT[str as keyof typeof STRING_ACCENT] ?? "#c8553d";
+                return (
+                  <div key={`${str}-${fret}`} style={{ height: 16, position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "rgba(255,255,255,0.07)" }} />
+                    {active && <div style={{ position: "relative", width: 12, height: 12, borderRadius: "50%", background: color, opacity: 0.9, boxShadow: `0 0 5px ${color}88`, zIndex: 1 }} />}
+                  </div>
+                );
+              })}
+            </>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Audio preview button ────────────────────────────────────────────────────────
+function AudioPreviewButton({ notes, bpm, accent }: { notes: Level["notes"]; bpm: number; accent: string }) {
+  const [playing, setPlaying] = useState(false);
+  const stopRef = useRef(false);
+
+  async function playPreview() {
+    if (playing) { stopRef.current = true; return; }
+    stopRef.current = false;
+    setPlaying(true);
+    try {
+      const ctx = new AudioContext();
+      const beatMs = 60000 / (bpm * 0.65);
+      for (const note of notes) {
+        if (stopRef.current) break;
+        const startAt = ctx.currentTime + 0.02;
+        const dur = Math.max(0.06, (note.durationBeats * beatMs) / 1000 * 0.75);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = note.targetFrequency;
+        osc.type = "triangle";
+        gain.gain.setValueAtTime(0.0001, startAt);
+        gain.gain.exponentialRampToValueAtTime(0.18, startAt + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startAt);
+        osc.stop(startAt + dur + 0.02);
+        await new Promise<void>(resolve => setTimeout(resolve, note.durationBeats * beatMs));
+        if (stopRef.current) break;
+      }
+      void ctx.close();
+    } catch {}
+    setPlaying(false);
+  }
+
+  return (
+    <button
+      onClick={() => void playPreview()}
+      style={{
+        padding: "5px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
+        border: `1px solid ${playing ? accent : "rgba(255,255,255,0.12)"}`,
+        background: playing ? `${accent}18` : "rgba(255,255,255,0.05)",
+        color: playing ? accent : "rgba(200,180,140,0.6)",
+        transition: "all .15s",
+      }}
+    >
+      {playing ? "◼ Stop" : "▶ Preview scale"}
+    </button>
+  );
+}
+
+// ── World complete screen ──────────────────────────────────────────────────────
+function WorldComplete({ worldNum, worldTitle, worldAccent, totalLevels, levelStars, nextLevelId }: {
+  worldNum: number; worldTitle: string; worldAccent: string;
+  totalLevels: number; levelStars: 0|1|2|3; nextLevelId?: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const shareText = `🎸 World ${worldNum} complete — Guitar Hero Academy!\n${["☆","★"][Math.min(1,levelStars)]} All ${totalLevels} levels done · guitar-hero-academy.vercel.app`;
+
+  function handleCopy() {
+    navigator.clipboard.writeText(shareText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(160deg, #04020f 0%, #0b0420 22%, #16082e 44%, #1e0818 66%, #0d0410 100%)",
+      padding: 24, position: "relative", overflow: "hidden",
+    }}>
+      <Confetti />
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: "-5%", left: "10%", width: 560, height: 560, borderRadius: "50%", background: `radial-gradient(circle, ${worldAccent}28 0%, transparent 65%)` }} />
+        <div style={{ position: "absolute", bottom: "-10%", right: "5%", width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle, rgba(110,40,180,0.2) 0%, transparent 65%)" }} />
+      </div>
+      <div style={{
+        background: "rgba(10,5,28,0.97)", borderRadius: 32, border: `1px solid ${worldAccent}40`,
+        boxShadow: `0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px ${worldAccent}18`,
+        padding: "48px 36px", textAlign: "center", maxWidth: 460, width: "100%",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 20,
+        position: "relative", zIndex: 1, animation: "modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+      }}>
+        <div style={{ fontSize: 52 }}>🏆</div>
+        <div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: worldAccent, letterSpacing: "0.22em", marginBottom: 8 }}>WORLD {worldNum} COMPLETE</div>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 900, color: "#f0e8d8", margin: 0, lineHeight: 1.1 }}>{worldTitle}</h1>
+        </div>
+        <div style={{ display: "flex", gap: 4, fontSize: 30 }}>
+          {[1,2,3].map(i => <span key={i} style={{ color: i <= levelStars ? worldAccent : "rgba(255,255,255,0.1)", filter: i <= levelStars ? `drop-shadow(0 0 6px ${worldAccent}99)` : "none" }}>★</span>)}
+        </div>
+        <p style={{ color: "rgba(240,232,216,0.62)", fontSize: 14, lineHeight: 1.7, maxWidth: 340, margin: 0 }}>
+          All {totalLevels} levels cleared.{nextLevelId ? ` World ${worldNum + 1} is unlocked and ready.` : " You've finished the full curriculum!"}
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+          {nextLevelId && (
+            <Link href={`/practice/${nextLevelId}`} style={{
+              padding: "16px", borderRadius: 16, fontWeight: 800, fontSize: 15, textDecoration: "none",
+              textAlign: "center", display: "block", background: `linear-gradient(135deg, ${worldAccent}, ${worldAccent}aa)`,
+              color: "white", boxShadow: `0 4px 0 ${worldAccent}55, 0 8px 28px ${worldAccent}40`,
+            }}>Begin World {worldNum + 1} →</Link>
+          )}
+          <button onClick={handleCopy} style={{
+            padding: "13px", borderRadius: 14, fontWeight: 700, fontSize: 14, cursor: "pointer",
+            background: "rgba(255,255,255,0.06)", color: "#f0e8d8", border: "1px solid rgba(255,255,255,0.12)",
+          }}>{copied ? "Copied!" : "Share result"}</button>
+          <Link href="/practice" style={{
+            padding: "11px", borderRadius: 14, fontWeight: 600, fontSize: 14, textDecoration: "none",
+            textAlign: "center", display: "block", color: "rgba(200,180,140,0.5)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}>World Map</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Level complete ─────────────────────────────────────────────────────────────
 function LevelComplete({ level, levelNum, hits, total, stars, maxCombo, accent, onRestart, nextLevelId }: {
   level: Level; levelNum: number; hits: number; total: number; stars: 0|1|2|3;
@@ -432,8 +663,11 @@ function SessionCompletePanel({
   maxCombo,
   accent,
   feedback,
+  noteStatuses,
+  speedMultiplier,
   onRestart,
   onRetrySlower,
+  onRetryFaster,
   onSwitchToPractice,
   nextLevelId,
 }: {
@@ -448,8 +682,11 @@ function SessionCompletePanel({
   maxCombo: number;
   accent: string;
   feedback: SessionFeedback;
+  noteStatuses: ReadonlyMap<string, NoteStatus>;
+  speedMultiplier: number;
   onRestart: () => void;
   onRetrySlower: () => void;
+  onRetryFaster: () => void;
   onSwitchToPractice: () => void;
   nextLevelId?: string;
 }) {
@@ -524,8 +761,22 @@ function SessionCompletePanel({
           <span style={{ color: "#7ac85a" }}>Hit {hits}</span>
           <span style={{ color: "#e8553d" }}>Missed {total - hits}</span>
           <span style={{ color: accent }}>{pct}%</span>
-          {maxCombo >= 3 && <span style={{ color: "#e8a840" }}>Best combo x{maxCombo}</span>}
+          {maxCombo >= 3 && <span style={{ color: "#e8a840" }}>Best combo ×{maxCombo}</span>}
         </div>
+
+        {/* String accuracy */}
+        {isFullLevel && (
+          <div style={{ width: "100%", borderRadius: 16, padding: "14px 14px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" }}>
+            <StringAccuracyBars noteStatuses={noteStatuses} notes={level.notes} />
+          </div>
+        )}
+
+        {/* Score history sparkline */}
+        {isFullLevel && (
+          <div style={{ width: "100%", borderRadius: 16, padding: "14px 14px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", textAlign: "left" }}>
+            <ScoreSparkline levelId={level.id} />
+          </div>
+        )}
 
         <div
           style={{
@@ -575,8 +826,26 @@ function SessionCompletePanel({
                 boxShadow: "0 4px 0 #2a4a18, 0 8px 28px rgba(92,138,66,0.4)",
               }}
             >
-              Next Level
+              Next Level →
             </Link>
+          )}
+          {/* Try faster — shown when score is strong and speed can still increase */}
+          {pct >= 80 && speedMultiplier < 1.5 && isFullLevel && (
+            <button
+              onClick={onRetryFaster}
+              style={{
+                padding: "13px",
+                borderRadius: 14,
+                fontWeight: 800,
+                fontSize: 15,
+                cursor: "pointer",
+                background: "rgba(200,85,61,0.12)",
+                color: "#ff9a7e",
+                border: "1.5px solid rgba(200,85,61,0.28)",
+              }}
+            >
+              Try faster ↑ ({speedMultiplier < 0.75 ? "0.75" : speedMultiplier < 1 ? "1" : speedMultiplier < 1.25 ? "1.25" : "1.5"}×)
+            </button>
           )}
           <button
             onClick={onRetrySlower}
@@ -623,6 +892,8 @@ function SessionCompletePanel({
           >
             Try Again
           </button>
+          {/* Share result */}
+          <ShareResultButton levelTitle={level.title} levelNum={levelNum} stars={stars} pct={Math.round(hits / total * 100)} accent={accent} />
           <Link
             href="/practice"
             style={{
@@ -642,6 +913,31 @@ function SessionCompletePanel({
           </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── Share result button ────────────────────────────────────────────────────────
+function ShareResultButton({ levelTitle, levelNum, stars, pct, accent }: { levelTitle: string; levelNum: number; stars: 0|1|2|3; pct: number; accent: string }) {
+  const [copied, setCopied] = useState(false);
+  const starStr = ["☆☆☆","★☆☆","★★☆","★★★"][stars];
+  const text = `🎸 ${levelTitle} — Guitar Hero Academy\n${starStr} · ${pct}%\nCan you beat me? guitar-hero-academy.vercel.app`;
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => {});
+  }
+  function handleShare() {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+  }
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <button onClick={handleShare} style={{
+        flex: 1, padding: "11px", borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: "pointer",
+        background: "rgba(29,155,240,0.1)", color: "#1d9bf0", border: "1px solid rgba(29,155,240,0.22)",
+      }}>Share on X</button>
+      <button onClick={handleCopy} style={{
+        flex: 1, padding: "11px", borderRadius: 12, fontWeight: 700, fontSize: 13, cursor: "pointer",
+        background: "rgba(255,255,255,0.05)", color: "rgba(200,180,140,0.7)", border: "1px solid rgba(255,255,255,0.1)",
+      }}>{copied ? "Copied!" : "Copy result"}</button>
     </div>
   );
 }
@@ -787,8 +1083,8 @@ function OnboardingModal({ onDone }: { onDone: () => void }) {
 }
 
 // ── Inner session ─────────────────────────────────────────────────────────────
-function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
-  level: Level; levelNum: number; worldNum: number;
+function InnerSession({ level, levelNum, worldNum, totalLevels, nextLevelId, onRestart }: {
+  level: Level; levelNum: number; worldNum: number; totalLevels: number;
   nextLevelId?: string; onRestart: () => void;
 }) {
   const { markComplete } = useProgress();
@@ -814,6 +1110,8 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
   useEffect(() => {
     try { if (!localStorage.getItem(ONBOARD_KEY)) setShowOnboarding(true); } catch {}
   }, []);
+
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   const total   = workingLevel.notes.length;
   const played  = [...noteStatuses.values()].filter(s => s === "hit" || s === "missed").length;
@@ -904,7 +1202,8 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
         else if (!isStarting) { setIsStarting(true); start(); }
       }
       if (e.code === "KeyR" && !isListening) { onRestart(); }
-      if (e.code === "Escape") { stop(); window.location.href = "/practice"; }
+      if (e.code === "Escape") { if (showShortcuts) { setShowShortcuts(false); return; } stop(); window.location.href = "/practice"; }
+      if (e.key === "?") { setShowShortcuts(s => !s); }
       if (!isListening) {
         if (SPEED_KEYS[e.code] !== undefined) setSpeedMultiplier(SPEED_KEYS[e.code]);
         if (e.code === "KeyM") setMode(isPractice ? "timed" : "practice");
@@ -912,11 +1211,17 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isListening, isStarting, start, stop, onRestart]); // eslint-disable-line
+  }, [isListening, isStarting, start, stop, onRestart, showShortcuts]); // eslint-disable-line
 
   function retrySlower() {
     setMode("timed");
     setSpeedMultiplier(speedMultiplier <= 0.75 ? 0.5 : 0.75);
+    onRestart();
+  }
+
+  function retryFaster() {
+    setMode("timed");
+    setSpeedMultiplier(speedMultiplier < 0.75 ? 0.75 : speedMultiplier < 1 ? 1 : speedMultiplier < 1.25 ? 1.25 : 1.5);
     onRestart();
   }
 
@@ -925,12 +1230,29 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
     onRestart();
   }
 
+  const worldInfo = WORLDS_BY_NUM[worldNum] ?? { title: `World ${worldNum}`, accentColor: "#c8553d" };
+  const isWorldComplete = isComplete && !isPractice && segmentState.isFull && stars >= 1 && levelNum === totalLevels;
+
+  if (isWorldComplete) {
+    return (
+      <WorldComplete
+        worldNum={worldNum}
+        worldTitle={worldInfo.title}
+        worldAccent={worldInfo.accentColor}
+        totalLevels={totalLevels}
+        levelStars={stars}
+        nextLevelId={nextLevelId}
+      />
+    );
+  }
+
   if (isComplete && !isPractice) {
     return (
       <SessionCompletePanel level={level} levelNum={levelNum} completionLabel={segmentState.isFull ? `LEVEL ${levelNum} COMPLETE` : "SECTION COMPLETE"}
         segmentLabel={segmentState.label} isFullLevel={segmentState.isFull} hits={hits} total={total}
         stars={stars} maxCombo={maxCombo} accent={accent} feedback={feedback}
-        onRestart={onRestart} onRetrySlower={retrySlower} onSwitchToPractice={switchToPracticeMode}
+        noteStatuses={noteStatuses} speedMultiplier={speedMultiplier}
+        onRestart={onRestart} onRetrySlower={retrySlower} onRetryFaster={retryFaster} onSwitchToPractice={switchToPracticeMode}
         nextLevelId={nextLevelId} />
     );
   }
@@ -1011,6 +1333,55 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
       {/* No animated orbs or dot-grid on the game screen — they cause large
           repaint areas that compete with the 60 fps tab-scroll rAF loop */}
 
+      {/* Keyboard shortcuts modal */}
+      {showShortcuts && (
+        <div
+          onClick={() => setShowShortcuts(false)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 200,
+            background: "rgba(4,2,15,0.82)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: "rgba(10,5,28,0.98)", border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 24, padding: "28px 28px 22px", maxWidth: 420, width: "100%",
+              animation: "modalIn 0.18s ease-out both",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900 }}>Keyboard shortcuts</div>
+              <button onClick={() => setShowShortcuts(false)} style={{ background: "none", border: "none", color: "rgba(200,180,140,0.5)", fontSize: 20, cursor: "pointer", lineHeight: 1, padding: 4 }} aria-label="Close shortcuts">✕</button>
+            </div>
+            <div style={{ display: "grid", gap: 10 }}>
+              {[
+                ["Space", "Start / stop microphone"],
+                ["R", "Restart level"],
+                ["Esc", "Stop and go to World Map"],
+                ["M", "Toggle timed ↔ practice mode"],
+                ["1 / 2 / 3 / 4 / 5", "Set speed: 0.5× / 0.75× / 1× / 1.25× / 1.5×"],
+                ["?", "Show / hide this panel"],
+              ].map(([key, desc]) => (
+                <div key={key} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <kbd style={{
+                    fontFamily: "monospace", fontSize: 12, fontWeight: 800,
+                    background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)",
+                    borderRadius: 8, padding: "4px 10px", whiteSpace: "nowrap", flexShrink: 0,
+                    color: "#f0e8d8",
+                  }}>{key}</kbd>
+                  <span style={{ fontSize: 13, color: "rgba(240,232,216,0.72)" }}>{desc}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 18, fontSize: 11, color: "rgba(200,180,140,0.3)", textAlign: "center" }}>
+              Press <kbd style={{ fontFamily: "monospace", fontSize: 11, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4, padding: "1px 5px" }}>Esc</kbd> or click outside to close
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
 
         {/* Header */}
@@ -1024,7 +1395,11 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           transition: "border-color .4s, background .4s",
         }}>
-          <Link href="/practice" style={{ fontSize: 13, fontWeight: 600, color: "rgba(200,180,140,0.6)", textDecoration: "none" }}>← Map</Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Link href="/practice" style={{ fontSize: 13, fontWeight: 600, color: "rgba(200,180,140,0.6)", textDecoration: "none" }}>← Map</Link>
+            <Link href="/library" style={{ fontSize: 12, fontWeight: 700, color: "rgba(184,149,255,0.72)", textDecoration: "none" }}>Library</Link>
+            <button onClick={() => setShowShortcuts(s => !s)} aria-label="Keyboard shortcuts" style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, color: "rgba(200,180,140,0.55)", fontSize: 11, fontWeight: 800, padding: "3px 7px", cursor: "pointer", lineHeight: 1 }}>?</button>
+          </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 10, fontWeight: 800, color: isHot ? "#ff9500" : accent, letterSpacing: "0.15em", transition: "color .4s" }}>
               WORLD {worldNum} · LEVEL {levelNum}
@@ -1034,14 +1409,17 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
               <div style={{ fontSize: 10, color: "rgba(240,232,216,0.48)", marginTop: 2 }}>{segmentState.label}</div>
             )}
           </div>
-          {isListening && combo >= 2
-            ? <ComboBadge combo={combo} accent={accent} />
-            : <div style={{
-                background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "3px 10px",
-                fontSize: 12, fontWeight: 700, color: "rgba(200,180,140,0.6)",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}>{played}/{total}</div>
-          }
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {isListening && combo >= 2
+              ? <ComboBadge combo={combo} accent={accent} />
+              : <div style={{
+                  background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "3px 10px",
+                  fontSize: 12, fontWeight: 700, color: "rgba(200,180,140,0.6)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}>{played}/{total}</div>
+            }
+            <AccountMenu compact />
+          </div>
         </div>
 
         {/* Progress bar */}
@@ -1181,10 +1559,18 @@ function InnerSession({ level, levelNum, worldNum, nextLevelId, onRestart }: {
                     background: "rgba(58,122,107,0.12)",
                     border: "1px solid rgba(58,122,107,0.18)",
                   }}>
-                    <div style={{ fontSize: 10, fontWeight: 800, color: "#b7e6dd", letterSpacing: "0.15em", marginBottom: 5 }}>TECHNIQUE GOAL</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 5 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: "#b7e6dd", letterSpacing: "0.15em" }}>TECHNIQUE GOAL</div>
+                      <AudioPreviewButton notes={level.notes} bpm={level.bpm} accent={accent} />
+                    </div>
                     <div style={{ fontSize: 13, color: "rgba(240,232,216,0.76)", lineHeight: 1.55 }}>{level.focus}</div>
                   </div>
                 )}
+
+                {/* Scale diagram */}
+                <div style={{ borderRadius: 14, padding: "12px 14px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <ScaleDiagram notes={level.notes} />
+                </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ minWidth: 52, flexShrink: 0 }}>
@@ -1443,6 +1829,6 @@ export default function PracticeSession({ level, levelNum, worldNum, totalLevels
   // whenever the user navigates to a different level, not just on restart.
   return (
     <InnerSession key={`${level.id}-${restartKey}`} level={level} levelNum={levelNum} worldNum={worldNum}
-      nextLevelId={nextLevelId} onRestart={() => setRestartKey(k => k + 1)} />
+      totalLevels={totalLevels} nextLevelId={nextLevelId} onRestart={() => setRestartKey(k => k + 1)} />
   );
 }

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ReactNode, useMemo, useState } from "react";
+import AccountMenu from "@/components/AccountMenu";
+import CloudSyncCallout from "@/components/CloudSyncCallout";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { useSetupProgress } from "@/hooks/useSetupProgress";
 
@@ -110,13 +112,17 @@ export default function SetupPage() {
             {"<-"} Home
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Practice Setup</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
             <Link href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>
               Player
             </Link>
             <Link href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>
               World Map
             </Link>
+            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>
+              Library
+            </Link>
+            <AccountMenu />
           </div>
         </header>
 
@@ -170,6 +176,10 @@ export default function SetupPage() {
               </button>
             </div>
           </div>
+        </section>
+
+        <section style={{ marginBottom: 22 }}>
+          <CloudSyncCallout title="Setup works without login, but Google keeps this device work safe" compact />
         </section>
 
         <section style={{ display: "grid", gap: 18 }}>

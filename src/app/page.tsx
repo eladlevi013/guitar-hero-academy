@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import AccountMenu from "@/components/AccountMenu";
+import CloudSyncCallout from "@/components/CloudSyncCallout";
+import { libraryCollections } from "@/data/library";
 import world1 from "@/data/world1";
 import world2 from "@/data/world2";
 import world3 from "@/data/world3";
@@ -23,6 +26,7 @@ export default function Home() {
   const { completed, isCompleted, isUnlocked, getBestStars } = useProgress();
   const { sessions, summary } = useSessionHistory();
   const { isReady, progress } = useSetupProgress();
+  const featuredCollections = libraryCollections.slice(0, 3);
 
   const stats = useMemo(() => {
     const totalLevels = ALL_WORLDS.reduce((sum, world) => sum + world.levels.length, 0);
@@ -93,16 +97,18 @@ export default function Home() {
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18 }}>Guitar Hero Academy</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <Link href="/player" style={{ color: "#bfd7ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Player</Link>
             <Link href="/setup" style={{ color: "#7bc3b4", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link href="/daily" style={{ color: "#f0c040", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Daily</Link>
             <Link href="/practice" style={{ color: "#c8553d", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>World Map</Link>
+            <Link href="/library" style={{ color: "#b895ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <AccountMenu />
           </div>
         </header>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "72px 24px 28px" }}>
-          <div style={{
+          <div className="hero-grid" style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1.25fr) minmax(280px, 0.75fr)",
             gap: 24,
@@ -149,6 +155,9 @@ export default function Home() {
                 <Link href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(255,255,255,0.06)", color: "#f0e8d8", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(255,255,255,0.12)" }}>
                   Browse Worlds
                 </Link>
+                <Link href="/library" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(176,122,232,0.1)", color: "#d4b8ff", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(176,122,232,0.24)" }}>
+                  Song-Feel Library
+                </Link>
                 <Link href="/daily" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(240,192,60,0.08)", color: "#f0c040", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(240,192,60,0.22)" }}>
                   Daily Challenge
                 </Link>
@@ -185,12 +194,16 @@ export default function Home() {
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "12px 24px 24px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+          <div className="summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
             <SummaryCard label="Levels Cleared" value={`${stats.completedLevels}/${stats.totalLevels}`} sub={`${completionPct}% complete`} accent="#c8553d" />
             <SummaryCard label="Stars Earned" value={`${stats.totalStars}/${stats.maxStars}`} sub="Best runs saved" accent="#f0c040" />
-            <SummaryCard label="Worlds Finished" value={`${stats.completedWorlds}/3`} sub="Curriculum milestones" accent="#3a7a6b" />
+            <SummaryCard label="Worlds Finished" value={`${stats.completedWorlds}/${ALL_WORLDS.length}`} sub="Curriculum milestones" accent="#3a7a6b" />
             <SummaryCard label="Session Streak" value={`${summary.streakDays} day${summary.streakDays === 1 ? "" : "s"}`} sub={`${summary.recent7Count} runs this week`} accent="#7a4a8a" />
           </div>
+        </section>
+
+        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "4px 24px 20px" }}>
+          <CloudSyncCallout />
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "8px 24px 24px" }}>
@@ -228,13 +241,13 @@ export default function Home() {
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "18px 24px 72px" }}>
           <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>PRACTICE PATHS</div>
-              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>A more useful guitar curriculum</h2>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>GUIDED PRACTICE PATH</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>Worlds that build real lead-guitar language</h2>
             </div>
-            <Link href="/practice" style={{ color: "#c8553d", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full world map ?</Link>
+            <Link href="/practice" style={{ color: "#c8553d", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full world map</Link>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
+          <div className="world-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
             {ALL_WORLDS.map((world) => {
               const worldStars = world.levels.reduce((sum, level) => sum + getBestStars(level.id), 0);
               const doneCount = world.levels.filter((level) => isCompleted(level.id)).length;
@@ -278,6 +291,49 @@ export default function Home() {
           </div>
         </section>
 
+        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 56px" }}>
+          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>SONG-FEEL LIBRARY</div>
+              <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>Browse by vibe when you do not want the full path</h2>
+            </div>
+            <Link href="/library" style={{ color: "#b895ff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full library</Link>
+          </div>
+
+          <div className="world-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
+            {featuredCollections.map((collection) => (
+              <div key={collection.id} style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 14px 38px rgba(0,0,0,0.28)" }}>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: collection.accentColor, marginBottom: 6 }}>{collection.subtitle.toUpperCase()}</div>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, marginBottom: 10 }}>{collection.title}</div>
+                <p style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.65, margin: "0 0 16px" }}>{collection.description}</p>
+
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                  {collection.drillIds.slice(0, 3).map((drillId) => (
+                    <span key={drillId} style={{ borderRadius: 999, padding: "6px 10px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(240,232,216,0.78)", fontSize: 11, fontWeight: 700 }}>
+                      {drillId.replace("world", "W").replace("-level", "L")}
+                    </span>
+                  ))}
+                </div>
+
+                <Link href="/library" style={{ display: "inline-block", textDecoration: "none", borderRadius: 14, background: `linear-gradient(135deg, ${collection.accentColor}, ${collection.accentColor}aa)`, color: "white", fontWeight: 800, padding: "13px 16px" }}>
+                  Explore this vibe
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <div style={{ fontSize: 12, color: "rgba(200,180,140,0.35)" }}>
+            Local-first practice with optional Google backup and sync.
+          </div>
+          <div style={{ display: "flex", gap: 16 }}>
+            <Link href="/practice" style={{ fontSize: 12, color: "rgba(200,180,140,0.35)", textDecoration: "none" }}>World Map</Link>
+            <Link href="/library" style={{ fontSize: 12, color: "rgba(200,180,140,0.35)", textDecoration: "none" }}>Library</Link>
+            <Link href="/player" style={{ fontSize: 12, color: "rgba(200,180,140,0.35)", textDecoration: "none" }}>Player Hub</Link>
+            <Link href="/setup" style={{ fontSize: 12, color: "rgba(200,180,140,0.35)", textDecoration: "none" }}>Setup</Link>
+          </div>
+        </footer>
       </div>
     </main>
   );

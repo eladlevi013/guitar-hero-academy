@@ -70,6 +70,9 @@ export function usePitchDetection() {
       streamRef.current = stream;
 
       const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+      // iOS Safari requires explicit resume() after creation — AudioContext
+      // starts in "suspended" state until a user gesture resumes it.
+      await ctx.resume();
       audioCtxRef.current = ctx;
 
       // ── Signal chain ──────────────────────────────────────────────────────

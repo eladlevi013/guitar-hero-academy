@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
+import { CloudProvider } from "@/components/CloudProvider";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,6 +31,13 @@ export const metadata: Metadata = {
     title: "Guitar Hero Academy",
     description: "Learn guitar with real-time pitch detection",
     type: "website",
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Guitar Hero Academy" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Guitar Hero Academy",
+    description: "Learn guitar with real-time pitch detection",
+    images: ["/api/og"],
   },
 };
 
@@ -41,7 +50,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${playfair.variable}`}>
-        {children}
+        <CloudProvider>
+          {children}
+          <Analytics />
+        </CloudProvider>
       </body>
     </html>
   );

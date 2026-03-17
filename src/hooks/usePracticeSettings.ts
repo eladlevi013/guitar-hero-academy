@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { UPDATED_AT_KEYS, touchUpdatedAt } from "@/lib/storage";
 
 export type PracticeMode = "timed" | "practice";
 export type SpeedMultiplier = 0.5 | 0.75 | 1 | 1.25 | 1.5;
@@ -8,14 +9,14 @@ export type SpeedMultiplier = 0.5 | 0.75 | 1 | 1.25 | 1.5;
 const SETTINGS_KEY = "gha-v1-practice-settings";
 const SETTINGS_EVENT = "gha:practice-settings";
 
-interface PracticeSettings {
+export interface PracticeSettings {
   speedMultiplier: SpeedMultiplier;
   mode: PracticeMode;
   drumVolume: number;
   timingOffsetMs: number;
 }
 
-const DEFAULT_SETTINGS: PracticeSettings = {
+export const DEFAULT_SETTINGS: PracticeSettings = {
   speedMultiplier: 1,
   mode: "timed",
   drumVolume: 0.7,
@@ -74,6 +75,7 @@ function writeSettings(settings: PracticeSettings) {
     cachedSettingsRaw = raw;
     cachedSettings = settings;
     window.localStorage.setItem(SETTINGS_KEY, raw);
+    touchUpdatedAt(UPDATED_AT_KEYS.practiceSettings);
     window.dispatchEvent(new Event(SETTINGS_EVENT));
   } catch {}
 }

@@ -141,3 +141,45 @@ input[type="range"] {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(200,85,61,0.25); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(200,85,61,0.45); }
+
+/* ── World complete / share pop-in ─────────────────────────────────────────── */
+@keyframes worldComplete {
+  0%   { transform: scale(0.85) translateY(20px); opacity: 0; }
+  60%  { transform: scale(1.03) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ── Mobile layout ─────────────────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  /* Home hero: stack the two cards vertically */
+  .hero-grid { grid-template-columns: 1fr !important; }
+
+  /* Practice session: note card goes vertical */
+  .note-card { flex-direction: column !important; min-height: unset !important; }
+  .note-card-left { flex: unset !important; padding: 14px 16px !important; }
+  .note-card-right { border-left: none !important; border-top: 1px solid rgba(255,255,255,0.1) !important; padding: 12px !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; }
+
+  /* Summary stats: 2 columns on small screens */
+  .summary-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* World cards: single column */
+  .world-cards { grid-template-columns: 1fr !important; }
+
+  /* Practice map: stack left panel and SVG map */
+  .practice-layout { flex-direction: column !important; }
+  .practice-map-sidebar { flex: unset !important; width: 100% !important; max-width: 100% !important; }
+
+  /* Player hub: single column */
+  .player-grid { grid-template-columns: 1fr !important; }
+
+  /* Status strip: wrap gracefully */
+  .status-strip { flex-wrap: wrap !important; gap: 8px !important; }
+  .status-divider { display: none !important; }
+
+  /* Control dock: make sync slider full width */
+  .sync-row { flex-wrap: wrap !important; }
+  .sync-row input[type="range"] { width: 100% !important; }
+
+  /* Heatmap: scroll on small screens */
+  .heatmap-scroll { overflow-x: auto !important; }
+}

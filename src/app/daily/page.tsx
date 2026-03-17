@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import AccountMenu from "@/components/AccountMenu";
 import { usePitchDetection } from "@/hooks/usePitchDetection";
 import { useGameLoop } from "@/hooks/useGameLoop";
 import { useBackingTrack } from "@/hooks/useBackingTrack";
@@ -121,7 +122,11 @@ export default function DailyPage() {
           <div style={{ fontSize: 9, fontWeight: 800, color: accent, letterSpacing: "0.2em" }}>DAILY CHALLENGE</div>
           <div style={{ fontSize: 14, fontWeight: 900, color: "#f0e8d8" }}>#{dayNumber} · {level.title}</div>
         </div>
-        <Link href="/practice" style={{ textDecoration: "none", fontSize: 12, fontWeight: 600, color: "rgba(220,196,160,0.45)" }}>Map</Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link href="/practice" style={{ textDecoration: "none", fontSize: 12, fontWeight: 600, color: "rgba(220,196,160,0.45)" }}>Map</Link>
+          <Link href="/library" style={{ textDecoration: "none", fontSize: 12, fontWeight: 600, color: "rgba(184,149,255,0.72)" }}>Library</Link>
+          <AccountMenu compact />
+        </div>
       </header>
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", maxWidth: 680, margin: "0 auto", width: "100%", padding: "20px 20px", gap: 14 }}>

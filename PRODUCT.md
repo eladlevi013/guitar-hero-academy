@@ -271,30 +271,44 @@ All reads/writes are wrapped in try/catch so storage errors are silent.
 - Graceful mic error handling with in-UI error messages
 - All `localStorage` reads/writes guarded with try/catch
 - Backing track and mic automatically cleaned up on unmount
-- Session history capped at 50 entries to avoid unbounded storage growth
+- Session history capped at 80 entries to avoid unbounded storage growth
+- **OG image** — `/api/og` edge route returns a 1200×630 image for social sharing previews
+- **Custom 404 page** — styled not-found.tsx with guitar emoji and navigation links
+- **Error boundary** — styled error.tsx with reset button and error message display
+- **Anonymous user ID** — `getAnonymousId()` / `useAnonymousId()` generates a UUID on first visit, stored in `gha-anon-id`. Makes account migration trivial when auth lands.
+- **Score history sparkline** — last 8–12 timed runs shown as a color-coded bar chart on the session complete screen and practice map level detail panel
+- **Per-string accuracy bars** — after each full level run, shows hit % per guitar string (only strings used in the level)
+- **Scale diagram** — mini fretboard in the pre-session control dock showing which positions appear in the level, colored by string
+- **Level audio preview** — "Preview scale" button plays the level's notes as synthesized tones at 65% BPM before starting
+- **World completion ceremony** — completing the last level of a world shows a full-screen celebration screen with confetti, world title, star count, share button, and "Begin World N+1" CTA
+- **Share on any level** — session complete screen has "Share on X" and "Copy result" buttons generating a result card (stars + score + link)
+- **Try faster** — when score ≥ 80%, a "Try faster ↑" button offers the next speed step (inverse of retry slower)
+- **Practice calendar heatmap** — GitHub-style 26-week contribution grid in Player Hub, colored by sessions per day
+- **Data export** — "Export my data" in Player Hub downloads all sessions, progress, achievements, and settings as dated JSON
+- **Auto-advance toggle** — Player Hub setting: after a 3-star full run, automatically navigate to the next level
+- **Mobile CSS layer** — `globals.css` media query at ≤680px covers hero grid, summary grid, world cards, practice map, player hub, and status strip
 
 ### Recommended next steps
 
 **Reliability**
 - E2E tests (Playwright) for setup flow and level-completion happy path
 - Unit tests for the YIN pitch detection and game loop hit detection logic
-- Error boundary around PracticeSession to catch WebAudio failures gracefully
+- Service worker for offline support and PWA installability badge
 
 **Reach**
-- PWA manifest + service worker — installable, works offline, app icon on home screen
-- Responsive layout pass for phones — tab rail and stat panels need mobile breakpoints
 - ARIA labels on all icon-only buttons and the SVG map nodes for screen reader support
-- Keyboard shortcuts documented in-app: `Space` start/stop, `R` restart, `Esc` back
+- Full mobile layout pass — the CSS layer is in place; individual pages need className wiring
+- Keyboard shortcut cheat sheet overlay (`?` key)
 
 **Growth**
-- Cloud sync — optionally persist `localStorage` state to a backend for cross-device access
+- Google Auth + cloud sync — link anonymous ID to account on first sign-in, sync localStorage to backend
 - Daily challenge leaderboard — submit scores to a backend, show global ranking
 - Analytics — event tracking on level start/complete/drop to identify curriculum weak spots
 - Level editor — JSON-based authoring tool so the curriculum can grow without code changes
 
 **Audio quality**
 - Sampled drum audio as an opt-in upgrade over the synthesized oscillator pattern
-- Audio engine abstraction layer so the drum backend can be swapped without touching the game loop
+- BPM ramp mode — starts at 70% tempo and auto-increases as the player succeeds (Rocksmith-style)
 
 ---
 

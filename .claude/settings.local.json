@@ -9,7 +9,10 @@
       "Bash(find:*)",
       "WebFetch(domain:appliedguitartheory.com)",
       "Bash(echo:*)",
-      "Read(//c/Users/eladl/OneDrive/**)"
+      "Read(//c/Users/eladl/OneDrive/**)",
+      "Bash(wc:*)",
+      "Bash(npx next:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
