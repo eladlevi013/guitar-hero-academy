@@ -10,6 +10,7 @@ import world3 from "@/data/world3";
 import { ALL_ACHIEVEMENTS, useAchievements } from "@/hooks/useAchievements";
 import { useAnonymousId } from "@/hooks/useAnonymousId";
 import { useAutoAdvance } from "@/hooks/useAutoAdvance";
+import { useFavoriteDrills } from "@/hooks/useFavoriteDrills";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
 import { useProgress } from "@/hooks/useProgress";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
@@ -28,6 +29,7 @@ function Panel({
 }) {
   return (
     <section
+      className="ui-glow-panel ui-lift-card"
       style={{
         background: "rgba(10,5,28,0.88)",
         border: "1px solid rgba(255,255,255,0.08)",
@@ -205,6 +207,7 @@ export default function PlayerPage() {
   const { progress, isReady, reset: resetSetup } = useSetupProgress();
   const { settings, setMode, setDrumVolume, setTimingOffsetMs, reset: resetSettings } = usePracticeSettings();
   const { autoAdvance, setAutoAdvance } = useAutoAdvance();
+  const { favorites } = useFavoriteDrills();
   const anonymousId = useAnonymousId();
   const [previewStatus, setPreviewStatus] = useState<"idle" | "playing" | "done">("idle");
 
@@ -258,6 +261,7 @@ export default function PlayerPage() {
       sessions,
       progress: { completedLevelIds: completed },
       achievements: { unlockedIds: unlocked },
+      favorites: { levelIds: favorites },
       settings,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
@@ -282,20 +286,20 @@ export default function PlayerPage() {
     >
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 22px 72px" }}>
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
-          <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>
+          <Link className="ui-nav-link" href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>
             {"<-"} Home
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Player Hub</div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
-            <Link href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>Practice</Link>
-            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <Link className="ui-nav-link" href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
+            <Link className="ui-nav-link" href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>Practice</Link>
+            <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
             <AccountMenu />
           </div>
         </header>
 
         <section className="player-grid" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(320px, 0.9fr)", gap: 20, marginBottom: 20 }}>
-          <div style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "30px 28px", boxShadow: "0 18px 48px rgba(0,0,0,0.35)" }}>
+          <div className="ui-glow-panel ui-lift-card" style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: "30px 28px", boxShadow: "0 18px 48px rgba(0,0,0,0.35)" }}>
             <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "6px 14px", borderRadius: 999, background: "rgba(106,158,232,0.14)", border: "1px solid rgba(106,158,232,0.24)", fontSize: 11, fontWeight: 800, color: "#bfd7ff", letterSpacing: "0.16em" }}>
               LOCAL PLAYER PROFILE
             </div>
@@ -321,7 +325,7 @@ export default function PlayerPage() {
             )}
           </div>
 
-          <div style={{ background: "rgba(10,5,28,0.88)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.35)", display: "grid", gap: 10 }}>
+          <div className="ui-lift-card" style={{ background: "rgba(10,5,28,0.88)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.35)", display: "grid", gap: 10 }}>
             <MiniStat label="Levels Cleared" value={`${completed.length}/${totals.totalLevels}`} accent="#c8553d" />
             <MiniStat label="Stars Banked" value={`${totals.totalStars}/${totals.maxStars}`} accent="#f0c040" />
             <MiniStat label="Practice Streak" value={`${summary.streakDays} day${summary.streakDays === 1 ? "" : "s"}`} accent="#7a4a8a" />

@@ -98,11 +98,11 @@ export default function Home() {
         }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18 }}>Guitar Hero Academy</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <Link href="/player" style={{ color: "#bfd7ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Player</Link>
-            <Link href="/setup" style={{ color: "#7bc3b4", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Setup</Link>
-            <Link href="/daily" style={{ color: "#f0c040", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Daily</Link>
-            <Link href="/practice" style={{ color: "#c8553d", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>World Map</Link>
-            <Link href="/library" style={{ color: "#b895ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <Link className="ui-nav-link" href="/player" style={{ color: "#bfd7ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Player</Link>
+            <Link className="ui-nav-link" href="/setup" style={{ color: "#7bc3b4", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Setup</Link>
+            <Link className="ui-nav-link" href="/daily" style={{ color: "#f0c040", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Daily</Link>
+            <Link className="ui-nav-link" href="/practice" style={{ color: "#c8553d", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>World Map</Link>
+            <Link className="ui-nav-link" href="/library" style={{ color: "#b895ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Library</Link>
             <AccountMenu />
           </div>
         </header>
@@ -114,7 +114,7 @@ export default function Home() {
             gap: 24,
             alignItems: "stretch",
           }}>
-            <div style={{
+            <div className="ui-glow-panel ui-lift-card" style={{
               background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 28,
@@ -137,6 +137,7 @@ export default function Home() {
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 24 }}>
                 <button
+                  className="ui-solid-button"
                   onClick={() => router.push(`/practice/${stats.nextLevel.id}`)}
                   style={{
                     border: "none",
@@ -152,19 +153,19 @@ export default function Home() {
                 >
                   Continue W{stats.nextWorld.number}-L{stats.nextLevelNumber}
                 </button>
-                <Link href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(255,255,255,0.06)", color: "#f0e8d8", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <Link className="ui-soft-button" href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(255,255,255,0.06)", color: "#f0e8d8", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(255,255,255,0.12)" }}>
                   Browse Worlds
                 </Link>
-                <Link href="/library" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(176,122,232,0.1)", color: "#d4b8ff", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(176,122,232,0.24)" }}>
+                <Link className="ui-soft-button" href="/library" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(176,122,232,0.1)", color: "#d4b8ff", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(176,122,232,0.24)" }}>
                   Song-Feel Library
                 </Link>
-                <Link href="/daily" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(240,192,60,0.08)", color: "#f0c040", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(240,192,60,0.22)" }}>
+                <Link className="ui-soft-button" href="/daily" style={{ textDecoration: "none", borderRadius: 16, background: "rgba(240,192,60,0.08)", color: "#f0c040", fontSize: 15, fontWeight: 700, padding: "15px 22px", border: "1px solid rgba(240,192,60,0.22)" }}>
                   Daily Challenge
                 </Link>
               </div>
             </div>
 
-            <div style={{
+            <div className="ui-glow-panel ui-lift-card" style={{
               background: "rgba(10,5,28,0.88)",
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 28,
@@ -207,7 +208,7 @@ export default function Home() {
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "8px 24px 24px" }}>
-          <div style={{ background: "rgba(10,5,28,0.84)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "20px 22px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
+          <div className="ui-glow-panel ui-lift-card" style={{ background: "rgba(10,5,28,0.84)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "20px 22px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18, alignItems: "start" }}>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>READY TO PLAY</div>
@@ -239,12 +240,13 @@ export default function Home() {
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "18px 24px 72px" }}>
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <div>
+          <div className="ui-section-head">
+            <div className="ui-section-copy">
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>GUIDED PRACTICE PATH</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>Worlds that build real lead-guitar language</h2>
+              <p>Each world now feels more like a chapter in a guitar journey, with clearer value before you ever press play.</p>
             </div>
-            <Link href="/practice" style={{ color: "#c8553d", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full world map</Link>
+            <Link className="ui-nav-link" href="/practice" style={{ color: "#c8553d", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full world map</Link>
           </div>
 
           <div className="world-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
@@ -253,7 +255,7 @@ export default function Home() {
               const doneCount = world.levels.filter((level) => isCompleted(level.id)).length;
               const nextInWorld = world.levels.findIndex((level, idx) => isUnlocked(idx, world.levels.map((item) => item.id)) && !isCompleted(level.id));
               return (
-                <div key={world.id} style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 14px 38px rgba(0,0,0,0.28)" }}>
+                <div className="ui-glow-panel ui-lift-card" key={world.id} style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 14px 38px rgba(0,0,0,0.28)" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 10 }}>
                     <div>
                       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: world.accentColor, marginBottom: 6 }}>WORLD {world.number}</div>
@@ -280,6 +282,7 @@ export default function Home() {
                   </div>
 
                   <button
+                    className="ui-solid-button"
                     onClick={() => router.push(`/practice/${world.levels[Math.max(0, nextInWorld)].id}`)}
                     style={{ width: "100%", border: "none", borderRadius: 14, background: `linear-gradient(135deg, ${world.accentColor}, ${world.accentColor}aa)`, color: "white", fontWeight: 800, padding: "13px 16px", cursor: "pointer" }}
                   >
@@ -292,17 +295,18 @@ export default function Home() {
         </section>
 
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 56px" }}>
-          <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-            <div>
+          <div className="ui-section-head">
+            <div className="ui-section-copy">
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>SONG-FEEL LIBRARY</div>
               <h2 style={{ fontFamily: "var(--font-display)", fontSize: 30, margin: 0 }}>Browse by vibe when you do not want the full path</h2>
+              <p>Collections now feel like intentional mini-worlds with their own tone, not just filters sitting on top of the same drills.</p>
             </div>
-            <Link href="/library" style={{ color: "#b895ff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full library</Link>
+            <Link className="ui-nav-link" href="/library" style={{ color: "#b895ff", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Open full library</Link>
           </div>
 
           <div className="world-cards" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 18 }}>
             {featuredCollections.map((collection) => (
-              <div key={collection.id} style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 14px 38px rgba(0,0,0,0.28)" }}>
+              <div className="ui-glow-panel ui-lift-card" key={collection.id} style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: 22, boxShadow: "0 14px 38px rgba(0,0,0,0.28)" }}>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: collection.accentColor, marginBottom: 6 }}>{collection.subtitle.toUpperCase()}</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900, marginBottom: 10 }}>{collection.title}</div>
                 <p style={{ color: "rgba(240,232,216,0.66)", fontSize: 13, lineHeight: 1.65, margin: "0 0 16px" }}>{collection.description}</p>
@@ -315,7 +319,7 @@ export default function Home() {
                   ))}
                 </div>
 
-                <Link href="/library" style={{ display: "inline-block", textDecoration: "none", borderRadius: 14, background: `linear-gradient(135deg, ${collection.accentColor}, ${collection.accentColor}aa)`, color: "white", fontWeight: 800, padding: "13px 16px" }}>
+                <Link className="ui-soft-button" href={`/library/${collection.slug}`} style={{ display: "inline-block", textDecoration: "none", borderRadius: 14, background: `linear-gradient(135deg, ${collection.accentColor}, ${collection.accentColor}aa)`, color: "white", fontWeight: 800, padding: "13px 16px" }}>
                   Explore this vibe
                 </Link>
               </div>
@@ -341,7 +345,7 @@ export default function Home() {
 
 function SummaryCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: string }) {
   return (
-    <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 18 }}>
+    <div className="ui-lift-card" style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: 18 }}>
       <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: accent, marginBottom: 8 }}>{label}</div>
       <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900, lineHeight: 1 }}>{value}</div>
       <div style={{ fontSize: 12, color: "rgba(200,180,140,0.5)", marginTop: 8 }}>{sub}</div>

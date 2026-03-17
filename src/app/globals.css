@@ -31,6 +31,106 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+a,
+button,
+input,
+textarea,
+select {
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.ui-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ui-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0.6);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+
+.ui-nav-link:hover::after {
+  opacity: 0.9;
+  transform: scaleX(1);
+}
+
+.ui-lift-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.ui-lift-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
+  border-color: rgba(255, 255, 255, 0.14) !important;
+}
+
+.ui-glow-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.ui-glow-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,0.08), transparent 35%),
+    radial-gradient(circle at top right, rgba(255,255,255,0.09), transparent 34%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.ui-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.ui-section-copy {
+  max-width: 680px;
+}
+
+.ui-section-copy p {
+  color: rgba(240, 232, 216, 0.58);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.ui-soft-button:hover,
+.ui-solid-button:hover {
+  transform: translateY(-2px);
+}
+
+.ui-soft-button:active,
+.ui-solid-button:active {
+  transform: translateY(0);
+}
+
 /* ── Selection colour ──────────────────────────────────────────────────────── */
 ::selection {
   background: rgba(200, 85, 61, 0.28);
@@ -164,6 +264,8 @@ input[type="range"] {
 
   /* World cards: single column */
   .world-cards { grid-template-columns: 1fr !important; }
+  .collection-grid { grid-template-columns: 1fr !important; }
+  .library-grid { grid-template-columns: 1fr !important; }
 
   /* Practice map: stack left panel and SVG map */
   .practice-layout { flex-direction: column !important; }
@@ -182,4 +284,12 @@ input[type="range"] {
 
   /* Heatmap: scroll on small screens */
   .heatmap-scroll { overflow-x: auto !important; }
+}
+
+@media (max-width: 980px) {
+  .collection-grid { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 860px) {
+  .library-grid { grid-template-columns: 1fr !important; }
 }

@@ -64,6 +64,11 @@ type PreferencesSnapshot = {
   updatedAt: string | null;
 };
 
+type FavoritesSnapshot = {
+  ids: string[];
+  updatedAt: string | null;
+};
+
 type CloudDocument = {
   version: 1;
   syncedAt: string;
@@ -71,6 +76,7 @@ type CloudDocument = {
   progress: ProgressSnapshot;
   achievements: AchievementsSnapshot;
   sessions: SessionsSnapshot;
+  favorites: FavoritesSnapshot;
   preferences: PreferencesSnapshot;
 };
 
@@ -79,6 +85,7 @@ type LocalBundle = {
   progress: ProgressSnapshot;
   achievements: AchievementsSnapshot;
   sessions: SessionsSnapshot;
+  favorites: FavoritesSnapshot;
   preferences: PreferencesSnapshot;
 };
 
@@ -168,6 +175,10 @@ function readLocalBundle(): LocalBundle {
       items: readJson<PracticeSessionRecord[]>(STORAGE_KEYS.sessionHistory, []),
       updatedAt: getUpdatedAt(UPDATED_AT_KEYS.sessionHistory),
     },
+    favorites: {
+      ids: uniqueStrings(readJson<string[]>(STORAGE_KEYS.favoriteDrills, [])),
+      updatedAt: getUpdatedAt(UPDATED_AT_KEYS.favoriteDrills),
+    },
     preferences: {
       data: {
         speedMultiplier: isSpeedMultiplier(settings.speedMultiplier)
@@ -201,6 +212,7 @@ function parseRemoteDocument(data: Record<string, unknown> | undefined): CloudDo
   const progressRaw = (data.progress ?? {}) as Record<string, unknown>;
   const achievementsRaw = (data.achievements ?? {}) as Record<string, unknown>;
   const sessionsRaw = (data.sessions ?? {}) as Record<string, unknown>;
+  const favoritesRaw = (data.favorites ?? {}) as Record<string, unknown>;
   const preferencesRaw = (data.preferences ?? {}) as Record<string, unknown>;
   const preferencesDataRaw = (preferencesRaw.data ?? {}) as Record<string, unknown>;
 
@@ -225,6 +237,12 @@ function parseRemoteDocument(data: Record<string, unknown> | undefined): CloudDo
         Array.isArray(sessionsRaw.items) ? (sessionsRaw.items as PracticeSessionRecord[]) : [],
       ),
       updatedAt: toIsoOrNull(sessionsRaw.updatedAt),
+    },
+    favorites: {
+      ids: uniqueStrings(
+        Array.isArray(favoritesRaw.ids) ? (favoritesRaw.ids as string[]) : [],
+      ),
+      updatedAt: toIsoOrNull(favoritesRaw.updatedAt),
     },
     preferences: {
       data: {
@@ -301,6 +319,13 @@ function mergeBundle(local: LocalBundle, remote: CloudDocument | null): CloudDoc
           ? local.sessions.updatedAt
           : remote.sessions.updatedAt,
     },
+    favorites: {
+      ids: uniqueStrings([...local.favorites.ids, ...remote.favorites.ids]),
+      updatedAt:
+        compareUpdatedAt(local.favorites.updatedAt, remote.favorites.updatedAt) >= 0
+          ? local.favorites.updatedAt
+          : remote.favorites.updatedAt,
+    },
     preferences: {
       data: useLocalPreferences ? local.preferences.data : remote.preferences.data,
       updatedAt: useLocalPreferences
@@ -328,6 +353,13 @@ function applyBundleToLocal(bundle: CloudDocument) {
   safeStorageSet(STORAGE_KEYS.sessionHistory, JSON.stringify(bundle.sessions.items));
   setUpdatedAt(UPDATED_AT_KEYS.sessionHistory, bundle.sessions.updatedAt ?? new Date().toISOString());
   dispatchStorageEvent(STORAGE_EVENTS.sessionHistory);
+
+  safeStorageSet(STORAGE_KEYS.favoriteDrills, JSON.stringify(bundle.favorites.ids));
+  setUpdatedAt(
+    UPDATED_AT_KEYS.favoriteDrills,
+    bundle.favorites.updatedAt ?? new Date().toISOString(),
+  );
+  dispatchStorageEvent(STORAGE_EVENTS.favoriteDrills);
 
   const currentSettings = readJson<PracticeSettings>(STORAGE_KEYS.practiceSettings, {
     speedMultiplier: 1,
@@ -500,6 +532,7 @@ export function CloudProvider({ children }: { children: React.ReactNode }) {
       STORAGE_EVENTS.progress,
       STORAGE_EVENTS.achievements,
       STORAGE_EVENTS.sessionHistory,
+      STORAGE_EVENTS.favoriteDrills,
       STORAGE_EVENTS.practiceSettings,
       STORAGE_EVENTS.autoAdvance,
     ] as const;

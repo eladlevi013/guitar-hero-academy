@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { libraryCollections } from "@/data/library";
 import world1 from "@/data/world1";
 import world2 from "@/data/world2";
 import world3 from "@/data/world3";
@@ -14,6 +15,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }))
   );
 
+  const collectionEntries = libraryCollections.map((collection) => ({
+    url: `${BASE}/library/${collection.slug}`,
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
   return [
     { url: BASE, changeFrequency: "weekly", priority: 1 },
     { url: `${BASE}/practice`, changeFrequency: "weekly", priority: 0.9 },
@@ -21,6 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${BASE}/daily`, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/player`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/setup`, changeFrequency: "monthly", priority: 0.5 },
+    ...collectionEntries,
     ...levelEntries,
   ];
 }

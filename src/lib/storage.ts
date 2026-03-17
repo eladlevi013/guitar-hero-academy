@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   stars: "gha-v1-stars",
   achievements: "gha-v1-achievements",
   sessionHistory: "gha-v1-session-history",
+  favoriteDrills: "gha-v1-favorite-drills",
   setupProgress: "gha-v1-setup-progress",
   practiceSettings: "gha-v1-practice-settings",
   autoAdvance: "gha-v1-auto-advance",
@@ -15,6 +16,7 @@ export const STORAGE_EVENTS = {
   progress: "gha:progress",
   achievements: "gha:achievements",
   sessionHistory: "gha:session-history",
+  favoriteDrills: "gha:favorite-drills",
   setupProgress: "gha:setup-progress",
   practiceSettings: "gha:practice-settings",
   autoAdvance: "gha:auto-advance",
@@ -24,6 +26,7 @@ export const UPDATED_AT_KEYS = {
   progress: "gha-v1-progress-updated-at",
   achievements: "gha-v1-achievements-updated-at",
   sessionHistory: "gha-v1-session-history-updated-at",
+  favoriteDrills: "gha-v1-favorite-drills-updated-at",
   practiceSettings: "gha-v1-practice-settings-updated-at",
   autoAdvance: "gha-v1-auto-advance-updated-at",
 } as const;

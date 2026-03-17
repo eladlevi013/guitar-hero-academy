@@ -22,6 +22,7 @@ function SetupStep({
 }) {
   return (
     <div
+      className="ui-glow-panel ui-lift-card"
       style={{
         background: "rgba(10,5,28,0.88)",
         border: done ? "1px solid rgba(122,200,90,0.32)" : "1px solid rgba(255,255,255,0.08)",
@@ -113,13 +114,13 @@ export default function SetupPage() {
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Practice Setup</div>
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-            <Link href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>
+            <Link className="ui-nav-link" href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>
               Player
             </Link>
-            <Link href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>
+            <Link className="ui-nav-link" href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>
               World Map
             </Link>
-            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>
+            <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>
               Library
             </Link>
             <AccountMenu />
@@ -134,7 +135,7 @@ export default function SetupPage() {
             marginBottom: 22,
           }}
         >
-          <div style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 30, padding: "30px 28px", boxShadow: "0 18px 48px rgba(0,0,0,0.35)" }}>
+          <div className="ui-glow-panel ui-lift-card" style={{ background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 30, padding: "30px 28px", boxShadow: "0 18px 48px rgba(0,0,0,0.35)" }}>
             <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "6px 14px", borderRadius: 999, background: "rgba(58,122,107,0.16)", border: "1px solid rgba(58,122,107,0.28)", fontSize: 11, fontWeight: 800, color: "#7bc3b4", letterSpacing: "0.16em" }}>
               GET YOUR RIG READY
             </div>
@@ -150,7 +151,7 @@ export default function SetupPage() {
             </p>
           </div>
 
-          <div style={{ background: "rgba(10,5,28,0.88)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 30, padding: 24, boxShadow: "0 18px 48px rgba(0,0,0,0.35)", display: "grid", gap: 12 }}>
+          <div className="ui-lift-card" style={{ background: "rgba(10,5,28,0.88)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 30, padding: 24, boxShadow: "0 18px 48px rgba(0,0,0,0.35)", display: "grid", gap: 12 }}>
             <div>
               <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: isReady ? "#7ac85a" : "#f0c040", marginBottom: 8 }}>SETUP STATUS</div>
               <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900 }}>{isReady ? "Ready to practice" : `${setupPct}% complete`}</div>
@@ -168,7 +169,7 @@ export default function SetupPage() {
               <StatPill label="Next Step" value={isReady ? "Start a level" : "Finish setup"} accent="#c8553d" />
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: isReady ? "linear-gradient(135deg, #c8553d, #a63518)" : "rgba(255,255,255,0.08)", color: "white", padding: "13px 16px", fontWeight: 800 }}>
+              <Link className="ui-soft-button" href="/practice" style={{ textDecoration: "none", borderRadius: 16, background: isReady ? "linear-gradient(135deg, #c8553d, #a63518)" : "rgba(255,255,255,0.08)", color: "white", padding: "13px 16px", fontWeight: 800 }}>
                 Open practice map
               </Link>
               <button onClick={reset} style={{ border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, background: "rgba(255,255,255,0.04)", color: "#f0e8d8", padding: "13px 16px", fontWeight: 700, cursor: "pointer" }}>

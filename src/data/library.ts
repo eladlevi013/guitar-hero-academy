@@ -230,6 +230,8 @@ export const allCatalogEntries: DrillCatalogEntry[] = WORLDS.flatMap((world) =>
   }),
 );
 
+const entryByLevelId = new Map(allCatalogEntries.map((entry) => [entry.levelId, entry] as const));
+
 export const allGenres = [...new Set(allCatalogEntries.flatMap((entry) => entry.genreTags))];
 export const allTechniques = [...new Set(allCatalogEntries.flatMap((entry) => entry.techniqueTags))];
 export const allScaleFamilies = [...new Set(allCatalogEntries.map((entry) => entry.scaleFamily))];
@@ -240,4 +242,8 @@ export function getCollectionBySlug(slug: string) {
 
 export function getCollectionEntries(collectionId: string) {
   return allCatalogEntries.filter((entry) => entry.collectionIds.includes(collectionId));
+}
+
+export function getCatalogEntryByLevelId(levelId: string) {
+  return entryByLevelId.get(levelId) ?? null;
 }

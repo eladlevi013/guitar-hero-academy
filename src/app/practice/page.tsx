@@ -319,10 +319,10 @@ export default function PracticePage() {
           <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>&lt;- Home</Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 900 }}>Practice Map</div>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-            <Link href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
-            <Link href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
-            <Link href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
-            <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
+            <Link className="ui-nav-link" href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
+            <Link className="ui-nav-link" href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
+            <Link className="ui-nav-link" href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
+            <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>
             <AccountMenu />
           </div>
         </header>
@@ -432,20 +432,22 @@ export default function PracticePage() {
           </div>
 
           <section style={{ marginBottom: 18 }}>
-            <div style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
-              <div style={{ display: "flex", alignItems: "end", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
-                <div>
+            <div className="ui-glow-panel ui-lift-card" style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
+              <div className="ui-section-head">
+                <div className="ui-section-copy">
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SONG-FEEL COLLECTIONS</div>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900 }}>Use worlds for progression, library packs for mood</div>
+                  <p>Use the map when you want order. Use collections when you want a more cinematic “what should I sound like today?” entry point.</p>
                 </div>
-                <Link href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Open library</Link>
+                <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Open library</Link>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+              <div className="collection-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
                 {featuredCollections.map((collection) => (
                   <button
+                    className="ui-lift-card"
                     key={collection.id}
-                    onClick={() => router.push("/library")}
+                    onClick={() => router.push(`/library/${collection.slug}`)}
                     style={{
                       textAlign: "left",
                       border: "1px solid rgba(255,255,255,0.08)",

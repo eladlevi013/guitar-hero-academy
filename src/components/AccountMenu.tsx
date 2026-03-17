@@ -86,18 +86,22 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
     <div ref={rootRef} style={{ position: "relative", flexShrink: 0 }}>
       <button
         onClick={() => setOpen((value) => !value)}
+        className="ui-soft-button"
         style={{
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
           borderRadius: 999,
           border: "1px solid rgba(255,255,255,0.12)",
-          background: open ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+          background: open
+            ? "linear-gradient(135deg, rgba(255,255,255,0.14), rgba(255,255,255,0.08))"
+            : "linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04))",
           color: "#f0e8d8",
-          padding: compact ? "7px 10px" : "8px 12px",
+          padding: compact ? "7px 11px" : "9px 14px",
           cursor: "pointer",
           minHeight: compact ? 34 : 38,
-          boxShadow: open ? "0 10px 24px rgba(0,0,0,0.2)" : "none",
+          boxShadow: open ? "0 12px 28px rgba(0,0,0,0.24)" : "0 6px 16px rgba(0,0,0,0.12)",
+          backdropFilter: "blur(10px)",
         }}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -131,17 +135,18 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
 
       {open && (
         <div
+          className="ui-glow-panel"
           style={{
             position: "absolute",
             top: "calc(100% + 10px)",
             right: 0,
-            width: 280,
-            maxWidth: "min(280px, calc(100vw - 24px))",
+            width: 296,
+            maxWidth: "min(296px, calc(100vw - 24px))",
             background: "rgba(10,5,28,0.98)",
             border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: 18,
-            padding: 14,
-            boxShadow: "0 18px 48px rgba(0,0,0,0.35)",
+            borderRadius: 20,
+            padding: 16,
+            boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
             backdropFilter: "blur(16px)",
             zIndex: 500,
           }}
@@ -155,11 +160,12 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
                 borderRadius: "50%",
                 display: "grid",
                 placeItems: "center",
-                background: "linear-gradient(135deg, rgba(106,158,232,0.2), rgba(200,85,61,0.18))",
+                background: "linear-gradient(135deg, rgba(106,158,232,0.22), rgba(200,85,61,0.2))",
                 border: "1px solid rgba(255,255,255,0.12)",
                 fontSize: 14,
                 fontWeight: 900,
                 color: "#f0e8d8",
+                boxShadow: "0 10px 24px rgba(0,0,0,0.2)",
               }}
             >
               {label.slice(0, 1).toUpperCase()}
@@ -184,8 +190,8 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
               onClick={() => setOpen(false)}
               style={{
                 textDecoration: "none",
-                borderRadius: 12,
-                padding: "10px 12px",
+                borderRadius: 14,
+                padding: "11px 12px",
                 background: "rgba(255,255,255,0.05)",
                 border: "1px solid rgba(255,255,255,0.08)",
                 color: "#f0e8d8",
@@ -201,10 +207,11 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
               <button
                 onClick={() => void handleAuthAction()}
                 disabled={busy}
+                className="ui-solid-button"
                 style={{
                   border: "none",
-                  borderRadius: 12,
-                  padding: "10px 12px",
+                  borderRadius: 14,
+                  padding: "11px 12px",
                   background:
                     user && !user.isAnonymous
                       ? "rgba(255,255,255,0.08)"
