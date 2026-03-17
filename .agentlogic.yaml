@@ -1,8 +1,5 @@
-ok
-
-
 project:
-  name: Guitar Hero Academy??????????????????????
+  name: Guitar Hero Academy
   description: >
     A browser-based lead guitar trainer. Real-time pitch detection via microphone,
     Guitar Hero–style scrolling tab rail, synced backing drums, and a structured

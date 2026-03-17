@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useCloud } from "@/components/CloudProvider";
 
 export default function CloudSyncCallout({
@@ -14,14 +14,13 @@ export default function CloudSyncCallout({
   const [busy, setBusy] = useState(false);
 
   const connected = Boolean(user && !user.isAnonymous);
+  const subtitle = !enabled
+    ? "Firebase is not configured yet, so this build is currently local-only."
+    : !ready
+      ? "Preparing sign-in and sync services..."
+      : "You can keep using the app without an account. Connect Google when you want backup, restore, and cross-device sync.";
 
   if (connected) return null;
-
-  const subtitle = useMemo(() => {
-    if (!enabled) return "Firebase is not configured yet, so this build is currently local-only.";
-    if (!ready) return "Preparing sign-in and sync services...";
-    return "You can keep using the app without an account. Connect Google when you want backup, restore, and cross-device sync.";
-  }, [enabled, ready]);
 
   async function handleConnect() {
     setBusy(true);

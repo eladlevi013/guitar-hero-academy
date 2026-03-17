@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useCloud } from "@/components/CloudProvider";
 
 function formatSyncTime(value: string | null) {
@@ -16,16 +16,20 @@ function formatSyncTime(value: string | null) {
 export default function CloudAccountDock() {
   const { enabled, ready, user, signInWithGoogle, signOut, syncStatus, syncError, lastSyncedAt } = useCloud();
   const [busy, setBusy] = useState(false);
-
-  const subtitle = useMemo(() => {
-    if (!enabled) return "Add Firebase env vars to turn on Google sign-in and cloud sync.";
-    if (!ready) return "Preparing account services...";
-    if (!user || user.isAnonymous) return "Progress stays local until you link Google.";
-    if (syncStatus === "syncing") return "Syncing your progress to Firestore...";
-    if (syncStatus === "error") return syncError ?? "Cloud sync hit an error.";
-    const syncedAt = formatSyncTime(lastSyncedAt);
-    return syncedAt ? `Last synced ${syncedAt}` : "Connected to Firestore.";
-  }, [enabled, lastSyncedAt, ready, syncError, syncStatus, user]);
+  const syncedAt = formatSyncTime(lastSyncedAt);
+  const subtitle = !enabled
+    ? "Add Firebase env vars to turn on Google sign-in and cloud sync."
+    : !ready
+      ? "Preparing account services..."
+      : !user || user.isAnonymous
+        ? "Progress stays local until you link Google."
+        : syncStatus === "syncing"
+          ? "Syncing your progress to Firestore..."
+          : syncStatus === "error"
+            ? syncError ?? "Cloud sync hit an error."
+            : syncedAt
+              ? `Last synced ${syncedAt}`
+              : "Connected to Firestore.";
 
   async function handleSignIn() {
     setBusy(true);

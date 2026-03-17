@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCloud } from "@/components/CloudProvider";
 
 function formatSyncTime(value: string | null) {
@@ -48,15 +48,20 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
     };
   }, []);
 
-  const statusText = useMemo(() => {
-    if (!enabled) return "Add Firebase env vars to enable cloud sync.";
-    if (!ready) return "Preparing account services...";
-    if (!user || user.isAnonymous) return "Your progress is staying on this device until you link Google.";
-    if (syncStatus === "syncing") return "Syncing progress to Firestore...";
-    if (syncStatus === "error") return syncError ?? "Cloud sync hit an error.";
-    const syncedAt = formatSyncTime(lastSyncedAt);
-    return syncedAt ? `Last synced ${syncedAt}.` : "Connected to Firestore.";
-  }, [enabled, lastSyncedAt, ready, syncError, syncStatus, user]);
+  const syncedAt = formatSyncTime(lastSyncedAt);
+  const statusText = !enabled
+    ? "Add Firebase env vars to enable cloud sync."
+    : !ready
+      ? "Preparing account services..."
+      : !user || user.isAnonymous
+        ? "Your progress is staying on this device until you link Google."
+        : syncStatus === "syncing"
+          ? "Syncing progress to Firestore..."
+          : syncStatus === "error"
+            ? syncError ?? "Cloud sync hit an error."
+            : syncedAt
+              ? `Last synced ${syncedAt}.`
+              : "Connected to Firestore.";
 
   const indicatorColor =
     !enabled ? "#7a4a8a" :
