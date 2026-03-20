@@ -284,13 +284,13 @@ export default function PlayerPage() {
         fontFamily: "var(--font-body)",
       }}
     >
-      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 22px 72px" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+      <div className="page-padding" style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 22px 72px" }}>
+        <header className="app-topbar" style={{ marginBottom: 24 }}>
           <Link className="ui-nav-link" href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>
             {"<-"} Home
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Player Hub</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="app-topbar-links">
             <Link className="ui-nav-link" href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link className="ui-nav-link" href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>Practice</Link>
             <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Library</Link>

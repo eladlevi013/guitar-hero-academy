@@ -83,21 +83,17 @@ export default function Home() {
       </div>
 
       <div style={{ position: "relative", zIndex: 1 }}>
-        <header style={{
+        <header className="app-topbar" style={{
           position: "sticky",
           top: 0,
           zIndex: 40,
-          height: 60,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           padding: "0 24px",
           backdropFilter: "blur(14px)",
           background: "rgba(6,3,16,0.78)",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18 }}>Guitar Hero Academy</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="app-topbar-links">
             <Link className="ui-nav-link" href="/player" style={{ color: "#bfd7ff", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Player</Link>
             <Link className="ui-nav-link" href="/setup" style={{ color: "#7bc3b4", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link className="ui-nav-link" href="/daily" style={{ color: "#f0c040", textDecoration: "none", fontSize: 13, fontWeight: 700 }}>Daily</Link>
@@ -107,10 +103,8 @@ export default function Home() {
           </div>
         </header>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "72px 24px 28px" }}>
-          <div className="hero-grid" style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.25fr) minmax(280px, 0.75fr)",
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "72px 24px 28px" }}>
+          <div className="hero-grid responsive-split" style={{
             gap: 24,
             alignItems: "stretch",
           }}>
@@ -194,7 +188,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "12px 24px 24px" }}>
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "12px 24px 24px" }}>
           <div className="summary-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
             <SummaryCard label="Levels Cleared" value={`${stats.completedLevels}/${stats.totalLevels}`} sub={`${completionPct}% complete`} accent="#c8553d" />
             <SummaryCard label="Stars Earned" value={`${stats.totalStars}/${stats.maxStars}`} sub="Best runs saved" accent="#f0c040" />
@@ -203,13 +197,13 @@ export default function Home() {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "4px 24px 20px" }}>
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "4px 24px 20px" }}>
           <CloudSyncCallout />
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "8px 24px 24px" }}>
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "8px 24px 24px" }}>
           <div className="ui-glow-panel ui-lift-card" style={{ background: "rgba(10,5,28,0.84)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 24, padding: "20px 22px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.9fr) minmax(0, 1.1fr)", gap: 18, alignItems: "start" }}>
+            <div className="responsive-split" style={{ gap: 18, alignItems: "start" }}>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: isReady ? "#7ac85a" : "#7bc3b4", marginBottom: 6 }}>READY TO PLAY</div>
                 <div style={{ fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 900, marginBottom: 10 }}>
@@ -227,7 +221,7 @@ export default function Home() {
                 )}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+              <div className="responsive-triplet">
                 <StatCard label="Mic" value={progress.micChecked ? "Checked" : "Pending"} />
                 <StatCard label="Tuner" value={progress.tunerChecked ? "Locked" : "Pending"} />
                 <StatCard label="Count-In" value={progress.audioChecked ? "Heard" : "Pending"} />
@@ -239,7 +233,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "18px 24px 72px" }}>
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "18px 24px 72px" }}>
           <div className="ui-section-head">
             <div className="ui-section-copy">
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>GUIDED PRACTICE PATH</div>
@@ -294,7 +288,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 56px" }}>
+        <section className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 56px" }}>
           <div className="ui-section-head">
             <div className="ui-section-copy">
               <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.52)", marginBottom: 6 }}>SONG-FEEL LIBRARY</div>
@@ -327,7 +321,7 @@ export default function Home() {
           </div>
         </section>
 
-        <footer style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+        <footer className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div style={{ fontSize: 12, color: "rgba(200,180,140,0.35)" }}>
             Local-first practice with optional Google backup and sync.
           </div>

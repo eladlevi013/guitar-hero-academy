@@ -33,6 +33,7 @@ export default function CloudSyncCallout({
 
   return (
     <section
+      className="ui-glow-panel"
       style={{
         background: connected
           ? "linear-gradient(145deg, rgba(58,122,107,0.18), rgba(255,255,255,0.04))"
@@ -68,6 +69,7 @@ export default function CloudSyncCallout({
           <button
             onClick={() => void handleConnect()}
             disabled={busy}
+            className="mobile-full-width"
             style={{
               border: "none",
               borderRadius: 14,
@@ -87,10 +89,9 @@ export default function CloudSyncCallout({
       </div>
 
       <div
+        className="callout-benefits"
         style={{
-          display: "grid",
           gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
-          gap: 10,
           marginTop: 16,
         }}
       >

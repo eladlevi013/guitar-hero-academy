@@ -57,13 +57,11 @@ export default function CollectionPageClient({
       }}
     >
       <header
+        className="app-topbar"
         style={{
           position: "sticky",
           top: 0,
           zIndex: 40,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           gap: 12,
           padding: "14px 22px",
           background: "rgba(6,3,16,0.84)",
@@ -78,18 +76,17 @@ export default function CollectionPageClient({
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 900 }}>{collection.title}</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div className="app-topbar-links">
           <Link className="ui-nav-link" href="/practice" style={{ textDecoration: "none", color: "#c8553d", fontSize: 13, fontWeight: 700 }}>Practice Path</Link>
           <Link className="ui-nav-link" href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
           <AccountMenu />
         </div>
       </header>
 
-      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "34px 22px 72px" }}>
+      <div className="page-padding" style={{ maxWidth: 1180, margin: "0 auto", padding: "34px 22px 72px" }}>
         <section
+          className="responsive-split"
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.15fr) minmax(280px, 0.85fr)",
             gap: 20,
             marginBottom: 24,
           }}

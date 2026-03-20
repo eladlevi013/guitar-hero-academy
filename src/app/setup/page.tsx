@@ -107,13 +107,13 @@ export default function SetupPage() {
         fontFamily: "var(--font-body)",
       }}
     >
-      <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 22px 72px" }}>
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 24, flexWrap: "wrap" }}>
+      <div className="page-padding" style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 22px 72px" }}>
+        <header className="app-topbar" style={{ marginBottom: 24 }}>
           <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>
             {"<-"} Home
           </Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 18, fontWeight: 900 }}>Practice Setup</div>
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <div className="app-topbar-links">
             <Link className="ui-nav-link" href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>
               Player
             </Link>
@@ -128,9 +128,8 @@ export default function SetupPage() {
         </header>
 
         <section
+          className="responsive-split"
           style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
             gap: 20,
             marginBottom: 22,
           }}
@@ -162,7 +161,7 @@ export default function SetupPage() {
             <div style={{ height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
               <div style={{ width: `${setupPct}%`, height: "100%", background: "linear-gradient(90deg, #3a7a6b, #7ac85a)", borderRadius: 999 }} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
+            <div className="responsive-pair">
               <StatPill label="Mic" value={progress.micChecked ? "Checked" : "Pending"} accent="#3a7a6b" />
               <StatPill label="Tuner" value={progress.tunerChecked ? "Locked in" : "Pending"} accent="#6a9ee8" />
               <StatPill label="Audio" value={progress.audioChecked ? "Count-in heard" : "Pending"} accent="#f0c040" />
@@ -239,7 +238,7 @@ export default function SetupPage() {
             body="Pluck a single clean note. Once the tuner sees it, save this step so your first practice session starts with a confident signal."
             done={progress.tunerChecked}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 14, alignItems: "center" }}>
+            <div className="mobile-tuner-row">
               <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "14px 16px" }}>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.15em", color: "#6a9ee8", marginBottom: 8 }}>LIVE TUNER</div>
                 <div style={{ fontSize: 30, fontWeight: 900, lineHeight: 1, marginBottom: 6 }}>{note?.name ?? "--"}</div>
@@ -248,6 +247,7 @@ export default function SetupPage() {
               <button
                 onClick={() => setTunerChecked(true)}
                 disabled={!note}
+                className="mobile-full-width"
                 style={{
                   border: "none",
                   borderRadius: 14,

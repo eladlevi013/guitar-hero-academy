@@ -315,10 +315,10 @@ export default function PracticePage() {
       </div>
 
       <div style={{ position: "relative", zIndex: 1 }}>
-        <header style={{ height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", background: "rgba(6,3,16,0.82)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <header className="app-topbar" style={{ height: 60, padding: "0 24px", background: "rgba(6,3,16,0.82)", backdropFilter: "blur(14px)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <Link href="/" style={{ textDecoration: "none", color: "rgba(240,232,216,0.68)", fontSize: 13, fontWeight: 700 }}>&lt;- Home</Link>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 900 }}>Practice Map</div>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <div className="app-topbar-links">
             <Link className="ui-nav-link" href="/player" style={{ textDecoration: "none", color: "#bfd7ff", fontSize: 13, fontWeight: 700 }}>Player</Link>
             <Link className="ui-nav-link" href="/setup" style={{ textDecoration: "none", color: "#7bc3b4", fontSize: 13, fontWeight: 700 }}>Setup</Link>
             <Link className="ui-nav-link" href="/daily" style={{ textDecoration: "none", color: "#f0c040", fontSize: 13, fontWeight: 700 }}>Daily</Link>
@@ -327,8 +327,8 @@ export default function PracticePage() {
           </div>
         </header>
 
-        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 56px" }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        <section className="page-padding" style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 56px" }}>
+          <div className="mobile-scroll-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
             {ALL_WORLDS.map((world, index) => (
               <button
                 key={world.id}
