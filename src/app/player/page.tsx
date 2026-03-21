@@ -4,19 +4,16 @@ import Link from "next/link";
 import { ReactNode, useMemo, useState } from "react";
 import AccountMenu from "@/components/AccountMenu";
 import CloudSyncCallout from "@/components/CloudSyncCallout";
-import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
+import { ALL_WORLDS } from "@/data/worlds";
 import { ALL_ACHIEVEMENTS, useAchievements } from "@/hooks/useAchievements";
 import { useAnonymousId } from "@/hooks/useAnonymousId";
 import { useAutoAdvance } from "@/hooks/useAutoAdvance";
 import { useFavoriteDrills } from "@/hooks/useFavoriteDrills";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
+import { useCloud } from "@/components/CloudProvider";
 import { useProgress } from "@/hooks/useProgress";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { useSetupProgress } from "@/hooks/useSetupProgress";
-
-const ALL_WORLDS = [world1, world2, world3];
 
 function Panel({
   eyebrow,
@@ -201,7 +198,8 @@ function PracticeHeatmap({ sessions }: { sessions: { timestamp: string }[] }) {
 }
 
 export default function PlayerPage() {
-  const { completed, getBestStars, reset: resetProgress } = useProgress();
+  const { completed, getBestStars } = useProgress();
+  const { resetProgressOnly } = useCloud();
   const { unlocked } = useAchievements();
   const { sessions, summary } = useSessionHistory();
   const { progress, isReady, reset: resetSetup } = useSetupProgress();
@@ -516,7 +514,7 @@ export default function PlayerPage() {
               })}
             </div>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={resetProgress} style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#f0e8d8", padding: "12px 15px", fontWeight: 700, cursor: "pointer" }}>
+              <button onClick={() => void resetProgressOnly()} style={{ borderRadius: 14, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#f0e8d8", padding: "12px 15px", fontWeight: 700, cursor: "pointer" }}>
                 Reset level progress
               </button>
               <button onClick={exportData} style={{ borderRadius: 14, border: "1px solid rgba(106,158,232,0.24)", background: "rgba(106,158,232,0.08)", color: "#bfd7ff", padding: "12px 15px", fontWeight: 700, cursor: "pointer" }}>

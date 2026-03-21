@@ -5,32 +5,32 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import AccountMenu from "@/components/AccountMenu";
 import { libraryCollections } from "@/data/library";
-import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
+import { ALL_WORLDS } from "@/data/worlds";
 import { useProgress } from "@/hooks/useProgress";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
 import { useSetupProgress } from "@/hooks/useSetupProgress";
 import type { Level, World } from "@/types/tab";
 
-const ALL_WORLDS = [world1, world2, world3];
-
 const NODES = [
-  { x: 150, y: 532 },
-  { x: 78, y: 438 },
-  { x: 222, y: 336 },
-  { x: 78, y: 230 },
-  { x: 222, y: 126 },
-  { x: 150, y: 52 },
+  { x: 150, y: 558 },
+  { x: 84, y: 490 },
+  { x: 218, y: 422 },
+  { x: 84, y: 354 },
+  { x: 218, y: 286 },
+  { x: 84, y: 218 },
+  { x: 218, y: 150 },
+  { x: 150, y: 70 },
 ];
 
 const ROAD = [
-  "M 150,532",
-  "C 150,486 78,488 78,438",
-  "C 78,392 222,390 222,336",
-  "C 222,286 78,282 78,230",
-  "C 78,182 222,180 222,126",
-  "C 222,88 150,86 150,52",
+  "M 150,558",
+  "C 150,524 84,524 84,490",
+  "C 84,456 218,456 218,422",
+  "C 218,388 84,388 84,354",
+  "C 84,320 218,320 218,286",
+  "C 218,252 84,252 84,218",
+  "C 84,184 218,184 218,150",
+  "C 218,110 150,106 150,70",
 ].join(" ");
 
 const WORLD_THEMES: Record<string, { main: string; dark: string }[]> = {
@@ -41,14 +41,18 @@ const WORLD_THEMES: Record<string, { main: string; dark: string }[]> = {
     { main: "#3a7a6b", dark: "#205548" },
     { main: "#3a5a8a", dark: "#1e3a68" },
     { main: "#7a4a8a", dark: "#4e2860" },
+    { main: "#c8553d", dark: "#9a3821" },
+    { main: "#f0c040", dark: "#8a6a18" },
   ],
   world2: [
-    { main: "#3a7a6b", dark: "#205548" },
-    { main: "#3a5a8a", dark: "#1e3a68" },
-    { main: "#7a4a8a", dark: "#4e2860" },
-    { main: "#c8553d", dark: "#9a3821" },
-    { main: "#8a3a20", dark: "#5c1e0a" },
-    { main: "#4e2860", dark: "#2a1038" },
+    { main: "#1e78c2", dark: "#0e4a82" },
+    { main: "#1a6aaa", dark: "#0c3e6e" },
+    { main: "#2480c8", dark: "#124e88" },
+    { main: "#1e5e9a", dark: "#0c3660" },
+    { main: "#2870b8", dark: "#144078" },
+    { main: "#1660a0", dark: "#0a3868" },
+    { main: "#3b8ed6", dark: "#18588e" },
+    { main: "#5aa7f2", dark: "#2b6db0" },
   ],
   world3: [
     { main: "#a83a1e", dark: "#6e2210" },
@@ -57,7 +61,43 @@ const WORLD_THEMES: Record<string, { main: string; dark: string }[]> = {
     { main: "#7a4a8a", dark: "#4e2860" },
     { main: "#c47c2a", dark: "#8a5218" },
     { main: "#c8553d", dark: "#9a3821" },
+    { main: "#ff7a59", dark: "#a63d22" },
+    { main: "#f0c040", dark: "#8a6a18" },
   ],
+};
+
+const WORLD_IDENTITY: Record<string, {
+  aura: string;
+  panelBg: string;
+  mapBg: string;
+  mission: string;
+  styleTag: string;
+  marker: string;
+}> = {
+  world1: {
+    aura: "radial-gradient(circle at 18% 18%, rgba(255,100,72,0.24) 0%, transparent 52%), radial-gradient(circle at 82% 72%, rgba(255,150,62,0.18) 0%, transparent 48%)",
+    panelBg: "linear-gradient(145deg, rgba(38,10,12,0.9), rgba(25,8,14,0.86))",
+    mapBg: "linear-gradient(180deg, rgba(40,12,16,0.96), rgba(18,8,14,0.98))",
+    mission: "Build fast confidence with songs people already recognize instead of asking them to trust random drills.",
+    styleTag: "FIRST SONGS",
+    marker: "Familiar melodies first, cleaner pacing, and a more believable entry point for late beginners.",
+  },
+  world2: {
+    aura: "radial-gradient(circle at 15% 20%, rgba(142,91,255,0.24) 0%, transparent 55%), radial-gradient(circle at 86% 68%, rgba(70,210,255,0.15) 0%, transparent 48%)",
+    panelBg: "linear-gradient(145deg, rgba(26,10,44,0.9), rgba(14,8,30,0.86))",
+    mapBg: "linear-gradient(180deg, rgba(30,10,52,0.96), rgba(12,8,28,0.98))",
+    mission: "Keep the songs familiar but add roots, rhythm, and more guitar-specific weight.",
+    styleTag: "SONG WEIGHT",
+    marker: "Weighted melodies, steadier support notes, and the first study-style material in the path.",
+  },
+  world3: {
+    aura: "radial-gradient(circle at 12% 18%, rgba(255,138,40,0.24) 0%, transparent 55%), radial-gradient(circle at 84% 72%, rgba(255,64,64,0.16) 0%, transparent 48%)",
+    panelBg: "linear-gradient(145deg, rgba(46,16,8,0.9), rgba(28,10,12,0.86))",
+    mapBg: "linear-gradient(180deg, rgba(54,18,8,0.96), rgba(18,8,12,0.98))",
+    mission: "Turn progress into payoff with lead lines, bigger movement, and short solo energy.",
+    styleTag: "STAGE LIFT",
+    marker: "Chorus lifts, darker lead lines, heavier pulses, and a real mini-solo finish.",
+  },
 };
 
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -114,7 +154,7 @@ function WorldMap({
 
   return (
     <svg
-      viewBox="0 0 300 590"
+      viewBox="0 0 300 620"
       preserveAspectRatio="xMidYMid meet"
       style={{ width: "100%", height: "100%", display: "block" }}
       xmlns="http://www.w3.org/2000/svg"
@@ -285,7 +325,21 @@ export default function PracticePage() {
   const worldDoneCount = activeWorld.levels.filter((level) => isCompleted(level.id)).length;
   const nextRecommendedIndex = getNextUnlockedIndex(activeWorld, isUnlocked, isCompleted);
   const worldSessions = sessions.filter((session) => session.worldNum === activeWorld.number).slice(0, 2);
-  const featuredCollections = libraryCollections.slice(0, 3);
+  const featuredCollections = [
+    libraryCollections.find((collection) => collection.id === "familiar-songs"),
+    ...libraryCollections.filter((collection) => collection.id !== "familiar-songs"),
+  ].filter((collection): collection is (typeof libraryCollections)[number] => Boolean(collection)).slice(0, 3);
+  const worldIdentity = WORLD_IDENTITY[activeWorld.id];
+  const worldProgress = ALL_WORLDS.map((world) => {
+    const cleared = world.levels.filter((level) => isCompleted(level.id)).length;
+    const total = world.levels.length;
+    return {
+      world,
+      cleared,
+      total,
+      pct: Math.round((cleared / total) * 100),
+    };
+  });
 
   function handleWorldChange(index: number) {
     const world = ALL_WORLDS[index];
@@ -328,25 +382,60 @@ export default function PracticePage() {
         </header>
 
         <section className="page-padding" style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 20px 56px" }}>
-          <div className="mobile-scroll-row" style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
-            {ALL_WORLDS.map((world, index) => (
-              <button
-                key={world.id}
-                onClick={() => handleWorldChange(index)}
-                style={{
-                  border: index === worldIndex ? `1px solid ${world.accentColor}` : "1px solid rgba(255,255,255,0.08)",
-                  background: index === worldIndex ? `${world.accentColor}20` : "rgba(255,255,255,0.04)",
-                  color: index === worldIndex ? "white" : "rgba(240,232,216,0.62)",
-                  borderRadius: 999,
-                  padding: "8px 14px",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                W{world.number} / {world.title}
-              </button>
-            ))}
+          <div className="mobile-scroll-row" style={{ marginBottom: 18 }}>
+            <div className="ui-glow-panel" style={{
+              borderRadius: 20,
+              border: "1px solid rgba(255,255,255,0.09)",
+              background: "rgba(10,5,28,0.84)",
+              boxShadow: "0 14px 34px rgba(0,0,0,0.3)",
+              padding: "14px 14px 12px",
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.16em", color: "rgba(200,180,140,0.52)", marginBottom: 10 }}>
+                CONNECTED WORLD ROUTE
+              </div>
+              <div style={{ display: "flex", alignItems: "stretch", gap: 8, flexWrap: "wrap" }}>
+                {worldProgress.map(({ world, cleared, total, pct }, index) => {
+                  const selected = index === worldIndex;
+                  const connectorActive = index < worldProgress.length - 1 && pct >= 60;
+                  return (
+                    <div key={world.id} style={{ display: "flex", alignItems: "center", flex: "1 1 240px", minWidth: 220 }}>
+                      <button
+                        onClick={() => handleWorldChange(index)}
+                        style={{
+                          width: "100%",
+                          textAlign: "left",
+                          border: selected ? `1px solid ${world.accentColor}` : `1px solid ${world.accentColor}55`,
+                          background: selected
+                            ? `linear-gradient(135deg, ${world.accentColor}44, rgba(255,255,255,0.07))`
+                            : `linear-gradient(135deg, ${world.accentColor}1f, rgba(255,255,255,0.03))`,
+                          color: "white",
+                          borderRadius: 14,
+                          padding: "10px 12px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 900, letterSpacing: "0.08em", color: world.accentColor }}>WORLD {world.number}</div>
+                          <div style={{ fontSize: 10, color: "rgba(240,232,216,0.72)", fontWeight: 700 }}>{cleared}/{total}</div>
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 800, marginTop: 5 }}>{world.title}</div>
+                        <div style={{ fontSize: 10, color: "rgba(240,232,216,0.62)", marginTop: 5 }}>Progress {pct}%</div>
+                      </button>
+                      {index < worldProgress.length - 1 && (
+                        <div style={{
+                          width: 22,
+                          height: 2,
+                          margin: "0 5px",
+                          background: connectorActive ? `linear-gradient(90deg, ${world.accentColor}, ${worldProgress[index + 1].world.accentColor})` : "rgba(255,255,255,0.2)",
+                          borderRadius: 999,
+                          flexShrink: 0,
+                        }} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
 
           <div className="status-strip" style={{
@@ -434,10 +523,10 @@ export default function PracticePage() {
           <section style={{ marginBottom: 18 }}>
             <div className="ui-glow-panel ui-lift-card" style={{ background: "rgba(10,5,28,0.82)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "18px 20px", boxShadow: "0 18px 48px rgba(0,0,0,0.3)" }}>
               <div className="ui-section-head">
-                <div className="ui-section-copy">
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SONG-FEEL COLLECTIONS</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900 }}>Use worlds for progression, library packs for mood</div>
-                  <p>Use the map when you want order. Use collections when you want a more cinematic “what should I sound like today?” entry point.</p>
+              <div className="ui-section-copy">
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: "rgba(200,180,140,0.48)", marginBottom: 6 }}>SONG-FEEL COLLECTIONS</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 900 }}>Follow the path or jump into a musical lane</div>
+                  <p>The worlds now carry the main learning path. The library is where you branch into familiar songs, grooves, or lead-focused moods without losing the structure.</p>
                 </div>
                 <Link className="ui-nav-link" href="/library" style={{ textDecoration: "none", color: "#b895ff", fontSize: 13, fontWeight: 700 }}>Open library</Link>
               </div>
@@ -469,12 +558,27 @@ export default function PracticePage() {
 
           <div className="practice-layout" style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "start" }}>
             <div style={{ flex: "1 1 470px", minWidth: 320, display: "grid", gap: 16 }}>
-              <div style={{ background: "rgba(10,5,28,0.9)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 28, padding: 22, boxShadow: "0 18px 48px rgba(0,0,0,0.32)" }}>
+              <div style={{
+                background: `${worldIdentity.aura}, ${worldIdentity.panelBg}`,
+                border: `1px solid ${activeWorld.accentColor}44`,
+                borderRadius: 28,
+                padding: 22,
+                boxShadow: `0 18px 48px rgba(0,0,0,0.32), 0 0 0 1px ${activeWorld.accentColor}22 inset`,
+              }}>
                 <div style={{ display: "flex", alignItems: "start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                   <div>
                     <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: activeWorld.accentColor, marginBottom: 6 }}>WORLD {activeWorld.number}</div>
                     <div style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 900, marginBottom: 8 }}>{activeWorld.title}</div>
                     <div style={{ color: "rgba(240,232,216,0.68)", fontSize: 13, lineHeight: 1.65, maxWidth: 560 }}>{activeWorld.description}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                      <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", background: `${activeWorld.accentColor}2b`, border: `1px solid ${activeWorld.accentColor}55`, color: "#fff" }}>
+                        {worldIdentity.styleTag}
+                      </span>
+                      <span style={{ borderRadius: 999, padding: "6px 10px", fontSize: 10, fontWeight: 700, background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.14)", color: "rgba(240,232,216,0.82)" }}>
+                        {worldIdentity.mission}
+                      </span>
+                    </div>
+                    <div style={{ color: "rgba(240,232,216,0.6)", fontSize: 12, marginTop: 10 }}>{worldIdentity.marker}</div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, minWidth: 230 }}>
                     <InfoStat label="Completed" value={`${worldDoneCount}/${activeWorld.levels.length}`} />
@@ -519,7 +623,7 @@ export default function PracticePage() {
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", color: activeWorld.accentColor, marginBottom: 6 }}>PATH VIEW</div>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 900 }}>Compact route map</div>
                 </div>
-                <div style={{ borderRadius: 22, background: "linear-gradient(180deg, rgba(18,10,40,0.98), rgba(11,7,24,0.98))", border: "1px solid rgba(255,255,255,0.06)", padding: "14px 10px 8px", height: 500, overflow: "hidden" }}>
+                <div style={{ borderRadius: 22, background: worldIdentity.mapBg, border: `1px solid ${activeWorld.accentColor}33`, padding: "14px 10px 8px", height: 560, overflow: "hidden" }}>
                   <WorldMap world={activeWorld} selectedIndex={selectedLevelIndex} onNodeSelect={setSelectedLevelIndex} />
                 </div>
               </div>
@@ -530,7 +634,7 @@ export default function PracticePage() {
                 {activeLevel.subtitle && <div style={{ color: "rgba(240,232,216,0.64)", fontSize: 13, marginBottom: 12 }}>{activeLevel.subtitle}</div>}
                 <div style={{ color: "rgba(240,232,216,0.74)", fontSize: 13, lineHeight: 1.7, marginBottom: 14 }}>{activeLevel.description}</div>
                 {activeLevel.focus && (
-                  <div style={{ marginBottom: 14, borderRadius: 16, padding: "12px 14px", background: "rgba(58,122,107,0.12)", border: "1px solid rgba(58,122,107,0.18)", color: "#b7e6dd", fontSize: 13, lineHeight: 1.6 }}>
+                  <div style={{ marginBottom: 14, borderRadius: 16, padding: "12px 14px", background: `${activeWorld.accentColor}1f`, border: `1px solid ${activeWorld.accentColor}4a`, color: "#f3ebdd", fontSize: 13, lineHeight: 1.6 }}>
                     Technique goal: {activeLevel.focus}
                   </div>
                 )}

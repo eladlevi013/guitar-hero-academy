@@ -1,34 +1,34 @@
-# Guitar Hero Academy — Product Spec
+# Shred School — Product Spec
 
-A browser-based lead guitar trainer. Real-time pitch detection via microphone, Guitar Hero–style scrolling tab rail, synced backing drums, and a structured curriculum across three progressively harder worlds. No songs, no subscription — pure technique practice.
+A browser-based lead guitar shredding trainer. Real-time pitch detection via microphone, Guitar Hero–style scrolling tab rail, synced backing drums, and a structured curriculum focused on speed, technique, and shredding mastery. No songs, no subscription — pure shredding practice.
 
 ---
 
 ## What it is
 
-A Next.js web app where a guitar player practices technique drills by playing along to a scrolling tab rail. The app listens to the microphone, detects pitch in real time, and scores each note as a hit or miss. Practice that sounds like music instead of homework.
+A Next.js web app where a guitar player practices shredding techniques by playing along to a scrolling tab rail. The app listens to the microphone, detects pitch in real time, and scores each note as a hit or miss. Speed and precision can be trained methodically instead of by ear alone.
 
 ---
 
 ## World & Level Structure
 
-### World 1 — Pentatonic & Blues Foundations
-Em pentatonic across all 5 CAGED positions, blues bends, call-and-response phrases, and single-string runs.
+### World 1 — Alternate Picking Foundations
+Build the bedrock of shredding: strict alternate picking, right-hand consistency, and clean articulation on pentatonic and blues scales.
 
 | Level | Name | Focus | BPM |
 |---|---|---|---|
-| 1 | Penta Box 1 | Position 1, open box | 78 |
-| 2 | Penta Box 2 | Position 2, G shape | 80 |
-| 3 | Penta Box 3 | Position 3, A shape | 83 |
-| 4 | Penta Box 4 | Position 4, B shape | 86 |
-| 5 | Penta Box 5 | Position 5, D shape | 89 |
-| 6 | Neck Runner | Positions 1→3→5 continuous run | 93 |
+| 1 | Down-Up Foundations | Alternate picking basics | 92 |
+| 2 | Pickstroke Precision | 3-note picking cells | 108 |
+| 3 | Blues Bend Awareness | Blue notes with precision | 100 |
+| 4 | 5th Fret Shift | Position independence and picking control | 100 |
+| 5 | Interval Jumping | Wider picking arcs | 104 |
+| 6 | Full-Range Alt-Pick | Position shifting at speed | 116 |
 
-### World 2 — Major Scale & Modal Awareness
-Major scale in position, Dorian and Mixolydian flavors, interval skips, and sequencing patterns.
+### World 2 — Legato & Fluidity
+Master hammer-ons, pull-offs, and slides to unlock smooth, liquid shredding. Legato is the secret weapon for speed.
 
-### World 3 — Advanced Technique
-Arpeggios, extended patterns, positional shifts, string-skipping, and speed development.
+### World 3 — Advanced Shredding
+Speed cells, 4-note sequences, string skipping, full-neck runs, and advanced articulation. This is where shredders are made.
 
 **18 levels total across 3 worlds.**
 
@@ -153,24 +153,30 @@ After each run the app generates personalized coaching based on the attempt:
 
 ---
 
-## Achievements (12 total)
+## Achievements (18 total)
 
 Stored in `localStorage`. Toast notification fires on unlock for 3.5 s.
 
 | ID | Title | Icon | Trigger |
 |---|---|---|---|
 | `first-note` | First Note | 🎵 | Hit your very first note |
-| `first-level` | Level Complete | ✅ | Finish any level |
+| `first-level` | Level Clear | ✅ | Finish any level |
 | `hat-trick` | Hat Trick | ⭐ | Earn 3★ on any level |
 | `perfect` | Perfect Run | 💎 | Hit 100% in one level |
+| `accuracy-star` | Sharp Shooter | 🎯 | Score 90%+ accuracy on any level |
 | `on-a-roll` | On a Roll | 🔥 | Hit 5 notes in a row |
 | `unstoppable` | Unstoppable | ⚡ | Hit 10 notes in a row |
-| `world1-done` | Foundations | 🏆 | Complete all 6 levels of World 1 |
-| `world2-done` | Scale Scholar | 🎓 | Complete all 6 levels of World 2 |
-| `world3-done` | Technique Lord | 👑 | Complete all 6 levels of World 3 |
+| `flow-state` | Flow State | 🌊 | Hit 20 notes in a row |
+| `speed-demon` | Speed Demon | 🚀 | Complete a level at 1.25× speed or faster |
+| `world1-done` | Right Hand Ready | 🏆 | Complete all 6 levels of World 1 |
+| `world2-done` | Fluid Fingers | 🎓 | Complete all 6 levels of World 2 |
+| `world3-done` | Shred Lord | 👑 | Complete all 6 levels of World 3 |
 | `all-worlds` | Guitar Hero | 🌟 | Complete all 18 levels |
+| `world1-ace` | Picking Pro | 🎸 | Earn 3★ on any World 1 level |
+| `world2-ace` | Legato Legend | 🎶 | Earn 3★ on any World 2 level |
+| `world3-ace` | Shred Star | 💥 | Earn 3★ on any World 3 level |
 | `daily-done` | Daily Grind | 📅 | Complete a daily challenge |
-| `daily-perfect` | Daily Legend | 🏅 | 3★ on a daily challenge |
+| `daily-perfect` | Daily Legend | 🥇 | 3★ on a daily challenge |
 
 ---
 
@@ -202,7 +208,7 @@ Last 6 runs with: level title, segment label, focus area, mode, score, timestamp
 Top 3 most-practiced focus areas derived from session history — shows where you keep coming back.
 
 ### Achievement Grid
-All 12 achievements shown with earned vs. locked state.
+All 18 achievements shown with earned vs. locked state.
 
 ---
 
@@ -287,6 +293,10 @@ All reads/writes are wrapped in try/catch so storage errors are silent.
 - **Data export** — "Export my data" in Player Hub downloads all sessions, progress, achievements, and settings as dated JSON
 - **Auto-advance toggle** — Player Hub setting: after a 3-star full run, automatically navigate to the next level
 - **Mobile CSS layer** — `globals.css` media query at ≤680px covers hero grid, summary grid, world cards, practice map, player hub, and status strip
+- **Expanded achievement set** — 18 achievements with correct Unicode emoji encoding; new entries cover Sharp Shooter (90%+), Flow State (20-note combo), Speed Demon (1.25× speed), per-world star tiers (Picking Pro / Legato Legend / Shred Star), and renamed world-completion titles (Right Hand Ready / Fluid Fingers / Shred Lord)
+- **Musical level redesign** — all 18 levels rebuilt with `buildNotesVaried` burst-hold phrasing: eighth-note groups followed by sustained holds, giving each drill the feel of real guitar music rather than a mechanical exercise
+- **World completion achievement triggers** — `PracticeSession` fires `world1-done` / `world2-done` / `world3-done` / `all-worlds` automatically when the last level of a world is completed in timed full-level mode
+- **Simplified home page UI** — hero reduced to headline + CTA + current-focus panel; four-stat summary row; three world cards with progress bars and resume buttons; clean footer; no extraneous sections
 
 ### Recommended next steps
 

@@ -1,17 +1,21 @@
 import { World } from "@/types/tab";
-import world1Level1 from "@/data/levels/world1-level1";
-import world1Level2 from "@/data/levels/world1-level2";
-import world1Level3 from "@/data/levels/world1-level3";
-import world1Level4 from "@/data/levels/world1-level4";
-import world1Level5 from "@/data/levels/world1-level5";
-import world1Level6 from "@/data/levels/world1-level6";
+import {
+  world1Level1,
+  world1Level2,
+  world1Level3,
+  world1Level4,
+  world1Level5,
+  world1Level6,
+  world1Level7,
+  world1Level8,
+} from "@/data/levelLibrary";
 
 const world1: World = {
   id: "world1",
   number: 1,
-  title: "Scale Groundwork",
-  description: "Open-position control, pentatonic shapes, blues color, interval drills, and the first real hand shifts. This world builds the vocabulary every guitarist actually uses.",
-  accentColor: "#f5a623",
+  title: "First Songs",
+  description: "The opening world is now built around familiar public-domain songs so new players hear something real before the path gets more demanding.",
+  accentColor: "#E8B84B",
   levels: [
     world1Level1,
     world1Level2,
@@ -19,6 +23,8 @@ const world1: World = {
     world1Level4,
     world1Level5,
     world1Level6,
+    world1Level7,
+    world1Level8,
   ],
 };
 

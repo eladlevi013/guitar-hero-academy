@@ -12,13 +12,7 @@ import { Level } from "@/types/tab";
 import { useAchievements } from "@/hooks/useAchievements";
 import { usePracticeSettings } from "@/hooks/usePracticeSettings";
 import { useSessionHistory } from "@/hooks/useSessionHistory";
-import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
-
-const WORLDS_BY_NUM: Record<number, { title: string; accentColor: string }> = {
-  1: world1, 2: world2, 3: world3,
-};
+import { ALL_WORLDS, WORLDS_BY_NUM } from "@/data/worlds";
 
 const IN_TUNE_CENTS = 15;
 const CLOSE_CENTS   = 40;
@@ -1087,7 +1081,7 @@ function InnerSession({ level, levelNum, worldNum, totalLevels, nextLevelId, onR
   level: Level; levelNum: number; worldNum: number; totalLevels: number;
   nextLevelId?: string; onRestart: () => void;
 }) {
-  const { markComplete } = useProgress();
+  const { markComplete, isCompleted } = useProgress();
   const pitchData = usePitchDetection();
   const { note, volume, isListening, error, start, stop } = pitchData;
   const backing = useBackingTrack();
@@ -1179,15 +1173,37 @@ function InnerSession({ level, levelNum, worldNum, totalLevels, nextLevelId, onR
   useEffect(() => {
     if (combo >= 5)  unlock("on-a-roll");
     if (combo >= 10) unlock("unstoppable");
+    if (combo >= 20) unlock("flow-state");
   }, [combo, unlock]);
 
   // Achievement: on level complete
   useEffect(() => {
-    if (!isComplete) return;
-    if (segmentState.isFull) unlock("first-level");
-    if (segmentState.isFull && stars === 3) unlock("hat-trick");
-    if (segmentState.isFull && hits === workingLevel.notes.length) unlock("perfect");
-  }, [isComplete, stars, hits, workingLevel.notes.length, unlock, segmentState.isFull]);
+    if (!isComplete || !segmentState.isFull) return;
+    unlock("first-level");
+    if (stars === 3) unlock("hat-trick");
+    if (hits === workingLevel.notes.length) unlock("perfect");
+    if (score >= 90) unlock("accuracy-star");
+    if (speedMultiplier >= 1.25) unlock("speed-demon");
+    // World-specific star achievements
+    if (stars === 3 && worldNum === 1) unlock("world1-ace");
+    if (stars === 3 && worldNum === 2) unlock("world2-ace");
+    if (stars === 3 && worldNum === 3) unlock("world3-ace");
+    // World completion: check if all levels in this world are now done
+    const worldData = ALL_WORLDS.find((w) => w.number === worldNum);
+    if (worldData) {
+      const allWorldDone = worldData.levels.every((l) => l.id === level.id || isCompleted(l.id));
+      if (allWorldDone) {
+        if (worldNum === 1) unlock("world1-done");
+        if (worldNum === 2) unlock("world2-done");
+        if (worldNum === 3) unlock("world3-done");
+        // All worlds complete?
+        const allWorldsDone = ALL_WORLDS.every((w) =>
+          w.levels.every((l) => l.id === level.id || isCompleted(l.id))
+        );
+        if (allWorldsDone) unlock("all-worlds");
+      }
+    }
+  }, [isComplete, segmentState.isFull]); // eslint-disable-line
 
   // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   const SPEED_KEYS: Record<string, 0.5 | 0.75 | 1 | 1.25 | 1.5> = {

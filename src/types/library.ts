@@ -4,6 +4,7 @@ export type DrillGenre =
   | "blues"
   | "rock"
   | "country"
+  | "folk"
   | "metal"
   | "modal"
   | "jazz"
@@ -37,6 +38,10 @@ export interface DrillCatalogEntry {
   worldNumber: number;
   worldTitle: string;
   worldAccentColor: string;
+  sourceTitle: string;
+  sourceLicense: string;
+  sourceAttribution?: string;
+  sourceUrl?: string;
   scaleFamily: ScaleFamily;
   techniqueTags: TechniqueTag[];
   genreTags: DrillGenre[];

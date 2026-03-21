@@ -316,6 +316,9 @@ export default function LibraryPage() {
         entry.level.focus,
         entry.vibeTitle,
         entry.vibeLine,
+        entry.sourceTitle,
+        entry.sourceAttribution,
+        entry.sourceLicense,
         entry.worldTitle,
         entry.genreTags.join(" "),
         entry.techniqueTags.join(" "),
@@ -383,7 +386,7 @@ export default function LibraryPage() {
             }}
           >
             <div style={{ display: "inline-flex", gap: 8, alignItems: "center", padding: "6px 14px", borderRadius: 999, background: "rgba(106,158,232,0.12)", border: "1px solid rgba(106,158,232,0.25)", fontSize: 11, fontWeight: 800, color: "#bfd7ff", letterSpacing: "0.16em" }}>
-              NO COPYRIGHTED SONGS. JUST SONG-FEEL WORKOUTS.
+              ORIGINAL DRILLS + FAMILIAR SONGS.
             </div>
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(36px, 6vw, 68px)", lineHeight: 0.98, margin: "18px 0 14px", letterSpacing: "-0.04em" }}>
               Browse drills by
@@ -395,7 +398,7 @@ export default function LibraryPage() {
               you want to keep.
             </h1>
             <p style={{ maxWidth: 720, color: "rgba(240,232,216,0.72)", fontSize: 16, lineHeight: 1.7, margin: 0 }}>
-              The practice path teaches order. The library gives you freedom. Start with curated packs, revisit recent drills, keep your favorites close, and let the app point you toward the next useful run.
+              The practice path teaches order. The library gives you freedom. Start with curated packs, jump into familiar songs, revisit recent drills, keep your favorites close, and let the app point you toward the next useful run.
             </p>
           </div>
 

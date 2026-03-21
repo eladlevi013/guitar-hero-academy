@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="pickGrad" cx="38%" cy="28%" r="72%">
+      <stop offset="0%" stop-color="#ff8060"/>
+      <stop offset="100%" stop-color="#8c2a10"/>
+    </radialGradient>
+    <radialGradient id="flameGrad" cx="50%" cy="80%" r="60%">
+      <stop offset="0%" stop-color="#ffe066"/>
+      <stop offset="55%" stop-color="#ff7a2a"/>
+      <stop offset="100%" stop-color="#c8553d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- Guitar pick shape -->
+  <path d="M50 6 C24 6 6 24 6 48 C6 68 28 88 50 96 C72 88 94 68 94 48 C94 24 76 6 50 6Z"
+        fill="url(#pickGrad)"/>
+  <!-- Flame highlight inside pick -->
+  <path d="M50 72 C44 64 38 56 40 46 C42 38 46 34 50 30 C54 34 58 38 60 46 C62 56 56 64 50 72Z"
+        fill="url(#flameGrad)" opacity="0.85"/>
+  <!-- Gloss -->
+  <ellipse cx="38" cy="30" rx="10" ry="7" fill="white" opacity="0.12" transform="rotate(-20,38,30)"/>
+</svg>

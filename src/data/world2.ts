@@ -1,17 +1,21 @@
 import { World } from "@/types/tab";
-import world2Level1 from "@/data/levels/world2-level1";
-import world2Level2 from "@/data/levels/world2-level2";
-import world2Level3 from "@/data/levels/world2-level3";
-import world2Level4 from "@/data/levels/world2-level4";
-import world2Level5 from "@/data/levels/world2-level5";
-import world2Level6 from "@/data/levels/world2-level6";
+import {
+  world2Level1,
+  world2Level2,
+  world2Level3,
+  world2Level4,
+  world2Level5,
+  world2Level6,
+  world2Level7,
+  world2Level8,
+} from "@/data/levelLibrary";
 
 const world2: World = {
   id: "world2",
   number: 2,
-  title: "Color and Connection",
-  description: "Major and minor sounds, Dorian and Mixolydian color, and chord-tone targeting. This world is about sounding more musical, not just faster.",
-  accentColor: "#3a7a6b",
+  title: "Song Weight",
+  description: "The middle world keeps familiar songs in play but adds roots, march feel, and study-style motion so the guitar parts feel fuller.",
+  accentColor: "#4B9BE8",
   levels: [
     world2Level1,
     world2Level2,
@@ -19,6 +23,8 @@ const world2: World = {
     world2Level4,
     world2Level5,
     world2Level6,
+    world2Level7,
+    world2Level8,
   ],
 };
 

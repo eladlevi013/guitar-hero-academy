@@ -8,17 +8,11 @@ import { useGameLoop } from "@/hooks/useGameLoop";
 import { useBackingTrack } from "@/hooks/useBackingTrack";
 import TabRail from "@/components/TabRail";
 import { useAchievements } from "@/hooks/useAchievements";
-import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
+import { ALL_WORLDS } from "@/data/worlds";
 import type { Level } from "@/types/tab";
 
 // All levels from all worlds, in order
-const ALL_LEVELS: Level[] = [
-  ...world1.levels,
-  ...world2.levels,
-  ...world3.levels,
-];
+const ALL_LEVELS: Level[] = ALL_WORLDS.flatMap((world) => world.levels);
 
 // Pick today's challenge based on UTC date
 function getTodayChallenge(): { level: Level; dayNumber: number } {

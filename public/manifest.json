@@ -1,7 +1,7 @@
 {
-  "name": "Guitar Hero Academy",
-  "short_name": "GHA",
-  "description": "Learn guitar with real-time pitch detection",
+  "name": "Fret Fire",
+  "short_name": "Fret Fire",
+  "description": "Master shredding with real-time pitch detection",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#04020f",

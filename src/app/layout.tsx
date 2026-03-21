@@ -17,26 +17,26 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   title: {
-    default: "Guitar Hero Academy",
-    template: "%s | Guitar Hero Academy",
+    default: "Fret Fire",
+    template: "%s | Fret Fire",
   },
-  description: "Learn guitar with real-time pitch detection. Play actual notes and the app tells you if you're in tune — in real time.",
+  description: "Master shredding with real-time pitch detection. Train alternate picking, legato, speed, and advanced techniques with instant feedback.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "GHA",
+    title: "Fret Fire",
   },
   openGraph: {
-    title: "Guitar Hero Academy",
-    description: "Learn guitar with real-time pitch detection",
+    title: "Fret Fire",
+    description: "Master shredding with real-time pitch detection",
     type: "website",
-    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Guitar Hero Academy" }],
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Fret Fire" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Guitar Hero Academy",
-    description: "Learn guitar with real-time pitch detection",
+    title: "Fret Fire",
+    description: "Master shredding with real-time pitch detection",
     images: ["/api/og"],
   },
 };

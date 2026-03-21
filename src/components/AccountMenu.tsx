@@ -26,9 +26,10 @@ function getAccountLabel(
 }
 
 export default function AccountMenu({ compact = false }: { compact?: boolean }) {
-  const { enabled, ready, user, signInWithGoogle, signOut, syncStatus, syncError, lastSyncedAt } = useCloud();
+  const { enabled, ready, user, signInWithGoogle, signOut, resetData, syncStatus, syncError, lastSyncedAt } = useCloud();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -82,6 +83,16 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
       setOpen(false);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleReset() {
+    if (!confirm("Reset all progress, achievements, and session history? This cannot be undone.")) return;
+    setResetting(true);
+    try {
+      await resetData();
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -231,6 +242,24 @@ export default function AccountMenu({ compact = false }: { compact?: boolean }) 
                 {busy ? "Working..." : user && !user.isAnonymous ? "Sign out" : "Connect Google"}
               </button>
             )}
+
+            <button
+              onClick={() => void handleReset()}
+              disabled={resetting}
+              style={{
+                border: "1px solid rgba(255,100,80,0.3)",
+                borderRadius: 14,
+                padding: "11px 12px",
+                background: "rgba(255,80,60,0.1)",
+                color: "rgba(255,140,120,0.9)",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: resetting ? "default" : "pointer",
+                opacity: resetting ? 0.75 : 1,
+              }}
+            >
+              {resetting ? "Resetting..." : "Reset all data"}
+            </button>
           </div>
         </div>
       )}

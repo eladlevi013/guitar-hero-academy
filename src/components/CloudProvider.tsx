@@ -9,7 +9,7 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
 } from "firebase/auth";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, onSnapshot, setDoc } from "firebase/firestore";
 import {
   createContext,
   useContext,
@@ -28,6 +28,7 @@ import {
   getUpdatedAt,
   readJson,
   safeStorageGet,
+  safeStorageRemove,
   safeStorageSet,
   setUpdatedAt,
 } from "@/lib/storage";
@@ -95,6 +96,8 @@ type CloudContextValue = {
   user: User | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetData: () => Promise<void>;
+  resetProgressOnly: () => Promise<void>;
   syncStatus: "disabled" | "idle" | "syncing" | "error";
   syncError: string | null;
   lastSyncedAt: string | null;
@@ -113,6 +116,8 @@ const CloudContext = createContext<CloudContextValue>({
   user: null,
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  resetData: async () => {},
+  resetProgressOnly: async () => {},
   syncStatus: "disabled",
   syncError: null,
   lastSyncedAt: null,
@@ -598,6 +603,80 @@ export function CloudProvider({ children }: { children: React.ReactNode }) {
       signOut: async () => {
         if (!enabled || !auth) return;
         await firebaseSignOut(auth);
+      },
+      resetData: async () => {
+        // Block uploads immediately so the scheduler can't re-upload old remote data
+        remoteRef.current = null;
+        remoteReadyRef.current = false;
+        lastUploadedFingerprintRef.current = null;
+        if (uploadTimeoutRef.current) {
+          window.clearTimeout(uploadTimeoutRef.current);
+          uploadTimeoutRef.current = null;
+        }
+
+        // Clear all local storage keys
+        for (const key of Object.values(STORAGE_KEYS)) {
+          safeStorageRemove(key);
+        }
+        for (const key of Object.values(UPDATED_AT_KEYS)) {
+          safeStorageRemove(key);
+        }
+
+        // Clear Firestore document if signed in
+        if (enabled && user && !user.isAnonymous) {
+          const db = getFirebaseDb();
+          if (db) {
+            await deleteDoc(doc(db, "users", user.uid));
+          }
+        }
+
+        // Dispatch events last so UI re-renders with already-empty storage
+        for (const event of Object.values(STORAGE_EVENTS)) {
+          dispatchStorageEvent(event);
+        }
+
+        setLastSyncedAt(null);
+        setSyncStatus(enabled ? "idle" : "disabled");
+        setSyncError(null);
+      },
+      resetProgressOnly: async () => {
+        // Block the upload scheduler immediately — prevents it from re-uploading
+        // stale remote data while the async Firestore write is in flight.
+        if (uploadTimeoutRef.current) {
+          window.clearTimeout(uploadTimeoutRef.current);
+          uploadTimeoutRef.current = null;
+        }
+        remoteReadyRef.current = false;
+
+        // Give the remote snapshot an empty progress with a *current* timestamp so
+        // that any merge that happens afterward picks empty over any cached remote.
+        const emptyProgress = { completed: [], stars: {}, updatedAt: new Date().toISOString() };
+        if (remoteRef.current) {
+          remoteRef.current = { ...remoteRef.current, progress: emptyProgress };
+        }
+
+        // Clear localStorage progress + stars
+        safeStorageRemove(STORAGE_KEYS.progress);
+        safeStorageRemove(STORAGE_KEYS.stars);
+        safeStorageRemove(UPDATED_AT_KEYS.progress);
+
+        // Persist the empty progress to Firestore if signed in.
+        // After setDoc, onSnapshot fires and sets remoteReadyRef back to true.
+        if (enabled && user && !user.isAnonymous) {
+          const db = getFirebaseDb();
+          if (db) {
+            await setDoc(
+              doc(db, "users", user.uid),
+              { progress: { completed: [], stars: {}, updatedAt: emptyProgress.updatedAt } },
+              { merge: true },
+            );
+          }
+        } else {
+          // Not signed in — no onSnapshot will fire, so re-enable manually.
+          remoteReadyRef.current = true;
+        }
+
+        dispatchStorageEvent(STORAGE_EVENTS.progress);
       },
     };
   }, [enabled, lastSyncedAt, ready, syncError, syncStatus, user]);

@@ -101,6 +101,19 @@ export default function LibraryDrillCard({
         <div style={{ color: "rgba(240,232,216,0.72)", fontSize: 13, lineHeight: 1.6 }}>{entry.vibeLine}</div>
       </div>
 
+      <div style={{ marginBottom: 12, borderRadius: 14, padding: "10px 12px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.13em", color: "rgba(200,180,140,0.5)", marginBottom: 4 }}>SOURCE</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#f0e8d8" }}>{entry.sourceTitle}</div>
+        <div style={{ fontSize: 11, color: "rgba(240,232,216,0.58)", marginTop: 4 }}>
+          {entry.sourceAttribution ? `${entry.sourceAttribution} - ${entry.sourceLicense}` : entry.sourceLicense}
+        </div>
+        {entry.sourceUrl && (
+          <a href={entry.sourceUrl} target="_blank" rel="noreferrer" style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#bfd7ff", textDecoration: "none", fontWeight: 700 }}>
+            View source
+          </a>
+        )}
+      </div>
+
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
         <Tag tone="accent">{prettyLabel(entry.scaleFamily)}</Tag>
         {entry.genreTags.slice(0, 2).map((tag) => <Tag key={tag}>{prettyLabel(tag)}</Tag>)}

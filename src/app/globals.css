@@ -79,12 +79,6 @@ select {
     background 180ms ease;
 }
 
-.ui-lift-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.34);
-  border-color: rgba(255, 255, 255, 0.14) !important;
-}
-
 .ui-glow-panel {
   position: relative;
   overflow: hidden;

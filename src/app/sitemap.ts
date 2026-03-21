@@ -1,13 +1,11 @@
 import { MetadataRoute } from "next";
 import { libraryCollections } from "@/data/library";
-import world1 from "@/data/world1";
-import world2 from "@/data/world2";
-import world3 from "@/data/world3";
+import { ALL_WORLDS } from "@/data/worlds";
 
 const BASE = "https://guitar-hero-academy.vercel.app";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const levelEntries = [world1, world2, world3].flatMap((world) =>
+  const levelEntries = ALL_WORLDS.flatMap((world) =>
     world.levels.map((level) => ({
       url: `${BASE}/practice/${level.id}`,
       changeFrequency: "monthly" as const,
